@@ -4,8 +4,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/FreeTTS"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Tess4J"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Image Tools"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/PDFReader"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/JavaDiffUtils"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ImageTools"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
