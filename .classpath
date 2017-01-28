@@ -7,6 +7,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/PDFReader"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/JavaDiffUtils"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ImageTools"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/OpenCV-3.1.0"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/OpenCV3.1.0"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
