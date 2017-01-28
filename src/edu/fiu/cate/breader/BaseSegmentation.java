@@ -6,7 +6,9 @@ import java.awt.image.DataBufferByte;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 
@@ -31,31 +33,43 @@ public class BaseSegmentation{
 		String pathToImg = "/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/";
 		String extension = "jpg"; //tiff
 		
-		Mat image, fgMask, output;
+		Mat image, fgMask = null, output;
 		BackgroundSubtractorMOG2 backgroundSubtractorMOG = Video.createBackgroundSubtractorMOG2();
 		backgroundSubtractorMOG.setDetectShadows(false);
 		
-		for(int i=1; i<=60; i++){
-			String imgNumber = "";
-			if(i>=100) imgNumber+= i/100; else imgNumber+= "0";
-			if(i>=10) imgNumber+= (i-(i/100)*100)/10+""; else imgNumber+= "0";
-			imgNumber+= (i-(i/10)*10) +"";
-			System.out.println("Loading: "+imgType+"SHM"+imgNumber+"."+extension);
-			image = Imgcodecs.imread(pathToImg+imgType+"SHM"+imgNumber+"."+extension);
-			fgMask=new Mat();
-	        backgroundSubtractorMOG.apply(image, fgMask,0.1);
-		}
+		Mat bg = Imgcodecs.imread(pathToImg+"BaseHR.jpg");
+		new IViewer("Background",bufferedImageFromMat(bg));
+//		for(int i=1; i<=100; i++){
+//			img2 = image.clone();
+//	        backgroundSubtractorMOG.apply(image, fgMask,0.1);
+//		}
+		
+//		for(int i=1; i<=60; i++){
+//			String imgNumber = "";
+//			if(i>=100) imgNumber+= i/100; else imgNumber+= "0";
+//			if(i>=10) imgNumber+= (i-(i/100)*100)/10+""; else imgNumber+= "0";
+//			imgNumber+= (i-(i/10)*10) +"";
+//			System.out.println("Loading: "+imgType+"SHM"+imgNumber+"."+extension);
+//			image = Imgcodecs.imread(pathToImg+imgType+"SHM"+imgNumber+"."+extension);
+//			fgMask=new Mat();
+//	        backgroundSubtractorMOG.apply(image, fgMask,0.1);
+//		}
 		
 		image = Imgcodecs.imread(pathToImg+imgType+"SHM001."+extension);
 		new IViewer("Original",bufferedImageFromMat(image));
 		
-		fgMask=new Mat();
-        backgroundSubtractorMOG.apply(image, fgMask);
+		Mat img2 = image.clone();
+		Core.subtract(image, bg, img2);
+		new IViewer("No Background",bufferedImageFromMat(img2));
 		
-        output=new Mat();
-        image.copyTo(output,fgMask);
-        
-		new IViewer("No Background",bufferedImageFromMat(output));
+		
+//		fgMask=new Mat();
+//        backgroundSubtractorMOG.apply(image, fgMask, 0.1);
+//		
+//        output=new Mat();
+//        image.copyTo(output,fgMask);
+//        
+//		new IViewer("No Background",bufferedImageFromMat(output));
 	}
 	
 	public static Mat bufferedImageToMat(BufferedImage bi) {
