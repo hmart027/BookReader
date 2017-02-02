@@ -11,6 +11,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
+import org.opencv.videoio.VideoCapture;
 
 import com.bluetechnix.argos.Argos3D;
 
@@ -24,6 +25,19 @@ public class BaseSegmentation{
 	}
 	
 	public BaseSegmentation(){
+		
+		CaptureSettings disp = new CaptureSettings();
+		VideoCapture camera = new VideoCapture(0);
+		Mat frame = new Mat();
+		byte[] img = null;
+		camera.read(frame);
+		img=new byte[frame.width()*frame.height()]; 
+		while(camera.read(frame)){
+			Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2GRAY);
+			frame.get(0, 0, img);
+			disp.setImage(bufferedImageFromArray(img, frame.width(), frame.height(), BufferedImage.TYPE_BYTE_GRAY));
+		}
+		if(1==1) return;
 
 //		byte[][][] img = ImageManipulation.loadImage("/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/testSHM001.jpg");
 //		new IViewer(ImageManipulation.getBufferedImage(img));
@@ -144,6 +158,19 @@ public class BaseSegmentation{
 		// Get the BufferedImage's backing array and copy the pixels directly into it
 		byte[] data = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
 		bi.get(0, 0, data);
+		
+		return img;
+	}
+	
+	public static BufferedImage bufferedImageFromArray(byte[] bi, int w, int h, int imgType) {
+		// Create an empty image in matching format
+		BufferedImage img = new BufferedImage(w, h, imgType);
+
+		// Get the BufferedImage's backing array and copy the pixels directly into it
+		byte[] data = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		for(int i=0; i<data.length; i++){
+			data[i]=bi[i];
+		}
 		
 		return img;
 	}
