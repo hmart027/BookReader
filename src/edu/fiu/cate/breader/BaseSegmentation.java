@@ -35,6 +35,10 @@ public class BaseSegmentation{
 		while(camera.read(frame)){
 			Imgproc.cvtColor(frame, frame, Imgproc.COLOR_BGR2GRAY);
 			frame.get(0, 0, img);
+			float normVal = disp.getNormVal();
+			for(int i=0; i<img.length; i++){
+				img[i] = (byte) ((255f/normVal)*img[i]);
+			}
 			disp.setImage(bufferedImageFromArray(img, frame.width(), frame.height(), BufferedImage.TYPE_BYTE_GRAY));
 		}
 		if(1==1) return;

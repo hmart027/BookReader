@@ -32,11 +32,12 @@ public class CaptureSettings extends JFrame {
 	private JSlider slider;
 	private JFormattedTextField textField;
 	private JCheckBox checkBox;
+	private JFormattedTextField minValueField;
+	private JFormattedTextField maxValueField;
 	
 	float normVal=0;
-	float max = 65535;
-	private JTextField textField_1;
-	private JTextField textField_2;
+	float maxNorm = 255; //65535
+	float minNorm = 0;
 	
 
 	/**
@@ -53,7 +54,8 @@ public class CaptureSettings extends JFrame {
 		captureDisplay = new ImagePanel(new Dimension(50, 50));
 		captureDisplay.setBackground(Color.DARK_GRAY);	
 		slider = new JSlider();
-		slider.setMaximum((int) max);
+		slider.setMaximum(1000);
+		slider.setValue(0);
 		NumberFormat nformat = NumberFormat.getNumberInstance();
 		nformat.setMinimumFractionDigits(1);
 		textField = new JFormattedTextField(nformat);
@@ -65,8 +67,9 @@ public class CaptureSettings extends JFrame {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				float v = ((JSlider)e.getSource()).getValue();
+				normVal = (maxNorm-minNorm)*v/1000.0f;
 				if(textField!=null){
-					textField.setText(v+"");
+					textField.setText(normVal+"");
 				}
 			}
 		});
@@ -76,17 +79,48 @@ public class CaptureSettings extends JFrame {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 				float v = ((Number)textField.getValue()).floatValue();
-				if(v<0) v=0;
-				if(v>max) v=max;
-				slider.setValue((int)v);
+				if(v<minNorm) v=minNorm;
+				if(v>maxNorm) v=maxNorm;
+				normVal = v;
+				int s = (int) ((normVal-minNorm)/(maxNorm-minNorm)*1000.0f);
+				slider.setValue(s);
 			}
 		});
 		
-		textField_1 = new JTextField();
-		textField_1.setColumns(10);
+		minValueField = new JFormattedTextField(nformat);
+		minValueField.setColumns(10);
+		minValueField.setValue(minNorm);
+		minValueField.addPropertyChangeListener("value", new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				float v = ((Number)minValueField.getValue()).floatValue();
+				if(v>maxNorm) v=maxNorm;
+				int s = slider.getValue();
+				minNorm = v;
+				normVal = (maxNorm-minNorm)*s/1000.0f-minNorm;
+				if(textField!=null){
+					textField.setText(normVal+"");
+				}
+				System.out.println("Min: "+minNorm);
+			}
+		});
 		
-		textField_2 = new JTextField();
-		textField_2.setColumns(10);
+		maxValueField = new JFormattedTextField(nformat);
+		maxValueField.setColumns(10);
+		maxValueField.setValue(maxNorm);
+		maxValueField.addPropertyChangeListener("value", new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				float v = ((Number)maxValueField.getValue()).floatValue();
+				if(v<minNorm) v=minNorm;
+				int s = slider.getValue();
+				maxNorm = v;
+				normVal = (maxNorm-minNorm)*s/1000.0f-minNorm;
+				if(textField!=null){
+					textField.setText(normVal+"");
+				}
+			}
+		});
 		
 		JLabel lblMax = new JLabel("Max:");
 		JLabel lblMin = new JLabel("Min:");
@@ -114,12 +148,12 @@ public class CaptureSettings extends JFrame {
 								.addGroup(gl_contentPane.createSequentialGroup()
 									.addComponent(lblMin)
 									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+									.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 								.addGroup(gl_contentPane.createSequentialGroup()
 									.addPreferredGap(ComponentPlacement.RELATED)
 									.addComponent(lblMax)
 									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(textField_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
+									.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
 							.addContainerGap(231, Short.MAX_VALUE))))
 		);
 		gl_contentPane.setVerticalGroup(
@@ -141,11 +175,11 @@ public class CaptureSettings extends JFrame {
 						.addGroup(gl_contentPane.createSequentialGroup()
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
 								.addComponent(lblMin)
-								.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+								.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 							.addPreferredGap(ComponentPlacement.UNRELATED)
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
 								.addComponent(lblMax)
-								.addComponent(textField_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+								.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 							.addGap(39))))
 		);
 		contentPane.setLayout(gl_contentPane);
@@ -154,6 +188,10 @@ public class CaptureSettings extends JFrame {
 		pack();
 	}
 	
+	public float getNormVal(){
+		return normVal;
+	}
+		
 	public void setImage(BufferedImage img){
 		this.captureDisplay.setImage(img);
 	}
