@@ -35,8 +35,8 @@ public class CaptureSettings extends JFrame {
 	private JFormattedTextField minValueField;
 	private JFormattedTextField maxValueField;
 	
-	float normVal=0;
-	float maxNorm = 255; //65535
+	float normVal=6000;
+	float maxNorm = 65535;
 	float minNorm = 0;
 	
 
@@ -55,7 +55,6 @@ public class CaptureSettings extends JFrame {
 		captureDisplay.setBackground(Color.DARK_GRAY);	
 		slider = new JSlider();
 		slider.setMaximum(1000);
-		slider.setValue(0);
 		NumberFormat nformat = NumberFormat.getNumberInstance();
 		nformat.setMinimumFractionDigits(1);
 		textField = new JFormattedTextField(nformat);
@@ -184,10 +183,11 @@ public class CaptureSettings extends JFrame {
 		);
 		contentPane.setLayout(gl_contentPane);
 		
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setVisible(true);
 		pack();
 	}
-	
+		
 	public float getNormVal(){
 		return normVal;
 	}

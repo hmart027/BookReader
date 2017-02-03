@@ -8,6 +8,10 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/JavaDiffUtils"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ImageTools"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/OpenCV3.1.0"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Argos3DJNI"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Argos3DJNI">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Argos3DJNI/Release"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
