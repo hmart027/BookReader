@@ -54,10 +54,11 @@ public class BookCoregistration {
 //			}
 			System.out.print("\n");
 		}
+		System.out.println("Max corr: "+maxCorr+", "+maxCorrShift);
 		new IViewer("MaxCorr", ImageManipulation.getGrayBufferedImage(shiftImage(img, 0, maxCorrShift)));
 		img = shiftImage(img, 0, maxCorrShift);
 		float maxRFactor = 0;
-		for(float rFactor=0.5f; rFactor<1.0f; rFactor+=0.025){
+		for(float rFactor=0.0f; rFactor<1.0f; rFactor+=0.025){
 //			float corr = (float) normCrossCorr( tempArray, imageToDoubleArray(resizeAndCrop(img, 1+rFactor, template.length, template[0].length)));
 			float corr = (float) normCrossCorr( template, resizeAndCrop(img, 1+rFactor, template.length, template[0].length));
 			if(corr>maxCorr){
@@ -68,6 +69,7 @@ public class BookCoregistration {
 			System.out.print("\n");
 		}
 		new IViewer("MaxCorrRez", ImageManipulation.getGrayBufferedImage(resizeAndCrop(img, 1+maxRFactor, template.length, template[0].length)));
+		System.out.println("Max zoom: "+maxCorr+", "+maxRFactor);
 		return out;
 	}
 	
@@ -109,6 +111,7 @@ public class BookCoregistration {
 		double meanF=0, meanT=0, stdF=0, stdT=0;
 		double mean2F=0, mean2T=0;
 		int h = f.length, w = f[0].length;  
+		double s = h*w;
 		for(int y=0; y<h; y++){
 			for(int x=0; x<w; x++){
 				meanF  += f[y][x]&0x0FF;
@@ -117,10 +120,10 @@ public class BookCoregistration {
 				mean2T += Math.pow(t[y][x]&0x0FF, 2);
 			}
 		}
-		meanF*=1.0/(double)f.length;
-		meanT*=1.0/(double)t.length;
-		mean2F*=1.0/(double)f.length;
-		mean2T*=1.0/(double)t.length;
+		meanF*=1.0/s;
+		meanT*=1.0/s;
+		mean2F*=1.0/s;
+		mean2T*=1.0/s;
 		stdF=mean2F-Math.pow(meanF, 2);
 		stdT=mean2T-Math.pow(meanT, 2);
 		for(int y=0; y<h; y++){
@@ -128,7 +131,7 @@ public class BookCoregistration {
 				out+=((double)(f[y][x]&0x0FF)-meanF)*((double)(t[y][x]&0x0FF)-meanT);
 			}
 		}
-		return out/(stdT*stdF*(double)f.length);
+		return out/(stdT*stdF*s);
 	}
 	
 	public byte[][] resize(byte[][] img, float scale){
