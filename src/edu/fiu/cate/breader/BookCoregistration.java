@@ -6,13 +6,12 @@ import img.ImageManipulation;
 
 public class BookCoregistration {
 	
+	String drive = "";
+	
 	private BookCoregistration(){
-//		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/IMG_1769.JPG"));
-//		byte[][] img  = xMirror(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/amp631.tiff")[0]);
-		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage("/home/harold/Pictures/3-17-17-trials/IMG_1769.JPG"));
-		byte[][] img  = xMirror(ImageManipulation.loadImage("/home/harold/Pictures/3-17-17-trials/amp631.tiff")[0]);
-		
-		
+		checkOS();
+		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage(drive + "School/Research/BookReader/3-17-17-trials/IMG_1769.JPG"));
+		byte[][] img  = xMirror(ImageManipulation.loadImage(drive + "School/Research/BookReader/3-17-17-trials/amp631.tiff")[0]);
 		
 		float hScale = (float)temp.length/(float)img.length;
 		float wScale = (float)temp[0].length/(float)img[0].length;
@@ -33,6 +32,16 @@ public class BookCoregistration {
 //		coregister(temp, imgRez);
 		coregister(tempRez, img);
 //		new IViewer("Correlation", ImageManipulation.getGrayBufferedImage(ITools.normalize(coregister(temp, imgRez))));
+		
+	}
+	
+	public void checkOS(){
+		String os = System.getProperty("os.name").toLowerCase();
+		if(os.contains("win")){
+			drive = "M:/";
+		}else if(os.contains("nix")||os.contains("nux")||os.contains("aix")){
+			drive = "/media/DATA/";
+		}
 	}
 	
 	public float[][] coregister(byte[][] template, byte[][] img){
@@ -284,6 +293,24 @@ public class BookCoregistration {
 		return out;
 	}
 
+	public <T> T[][] shiftImage(T[][] img, int xShift, int yShift){
+		int[] imgDim  = new int[]{img.length, img[0].length};
+		int[] imgCent = new int[]{imgDim[0]/2, imgDim[1]/2};
+		int[] outCent = new int[]{imgCent[0]+yShift, imgCent[1]+xShift};
+		@SuppressWarnings("unchecked")
+		T[][] out = (T[][])java.lang.reflect.Array.newInstance(img.getClass(), imgDim[0], imgDim[1]);
+		for(int y=0; y<imgDim[0]; y++){
+    		int oY = (imgCent[0] - ((outCent[0]-y)));
+			for(int x=0; x<imgDim[1]; x++){
+				int oX = (imgCent[1] - ((outCent[1]-x)));
+				if(oY>0 && oY<imgDim[0] && oX>0 && oX<imgDim[1]){
+	    			out[y][x] = img[oY][oX];
+	    		}
+			}
+		}
+		return out;
+	}
+	
 	public double[] imageToDoubleArray(byte[][] img){
 		int[] s = new int[]{img.length, img[0].length};
 		double[] out = new double[s[0]*s[1]];
