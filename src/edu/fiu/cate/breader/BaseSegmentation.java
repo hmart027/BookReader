@@ -1,13 +1,20 @@
 package edu.fiu.cate.breader;
 
+import java.awt.List;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Vector;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Point;
+import org.opencv.core.KeyPoint;
+import org.opencv.features2d.FeatureDetector;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
@@ -44,7 +51,6 @@ public class BaseSegmentation{
 //			}
 //			disp.setImage(bufferedImageFromArray(img, frame.width(), frame.height(), BufferedImage.TYPE_BYTE_GRAY));
 //		}
-
 //		byte[][][] img = ImageManipulation.loadImage("/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/testSHM001.jpg");
 //		new IViewer(ImageManipulation.getBufferedImage(img));
 //		new IViewer("R",ImageManipulation.getGrayBufferedImage(img[0]));
@@ -55,9 +61,10 @@ public class BaseSegmentation{
 		String imgType = "test"; //ampdata
 		String pathToImg = "/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/";
 		pathToImg = "/media/harold/DataLPC/BReader/Background Removal Test/cardboardNN/";
+		pathToImg = "/home/harold/Pictures/6-30-17/";
 		String extension = "tiff"; //tiff
 		
-		Mat image, fgMask = null, output;
+		Mat image = null, fgMask = null, output = null;
 		BackgroundSubtractorMOG2 backgroundSubtractorMOG = Video.createBackgroundSubtractorMOG2();
 		backgroundSubtractorMOG.setDetectShadows(false);
 		
@@ -76,7 +83,8 @@ public class BaseSegmentation{
 		int w = argos.getImageData().numColumns;
 		int h = argos.getImageData().numRows;
 		float[] amp = argos.getAmplitudes();
-		byte[] img = new byte[amp.length];
+		float[] dist = argos.getAmplitudes();
+		byte[] img = new byte[dist.length];
 //		image = new Mat(h, w, CvType.CV_8UC1);
 //		for (int i=0; i<120; i++){
 //			if((amp = argos.getAmplitudes())!=null){
@@ -110,30 +118,70 @@ public class BaseSegmentation{
 //			disp.setImage(bufferedImageFromArray(img, w, h, BufferedImage.TYPE_BYTE_GRAY));
 //		}
 //		argos.close();
-		
+
+		//Saving images
 		argos.setBilateralFilter(true);
 		RollingImageFilter filter = new RollingImageFilter(60, 120*160);
 		for(int i = 0; i<60; i++){
-			amp = argos.getDistances();
-			filter.filter(amp);
+			dist = argos.getDistances();
+			filter.filter(dist);
 		}
 		float[] base = new float[(120*160)];
 		for(int i = 0; i<120; i++){
-			amp = filter.filter(argos.getDistances());
-			base = addArray(base, amp);
+			dist = filter.filter(argos.getDistances());
+			base = addArray(base, dist);
 		}
 		base = scalarMultArray(base, 1.0f/120.0f);
+
+		MatOfKeyPoint matOfKeyPoints = new MatOfKeyPoint();
+        FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.DYNAMIC_GFTT);
+        
+        KeyPoint[] keyPoints;
+        BufferedImage finalDisplay = null;
+        int i = 0;
 		
-		while((amp = argos.getDistances())!=null){
+        float[] filtDist, averageRes;
+		while((dist = argos.getDistances())!=null){
 //			float normVal = disp.getNormVal();
 //			for(int i=0; i<img.length; i++){
 //				img[i] = (byte) ((255f/normVal)*amp[i]);
 //			}
-			float[][] normImg = getImageFromArray(subArray(filter.filter(amp), base), w, h);
-			normImg = ITools.crop(30, 40, 120, 100, normImg);
+			filtDist = filter.filter(dist);
+			averageRes = subArray(filtDist, base);
+			float[][] rawDist = getHorizontalFlip(getImageFromArray(filtDist, w, h));
+			float[][] normImg = getHorizontalFlip(getImageFromArray(averageRes, w, h));
+			float[][] amplitudes = getHorizontalFlip(getImageFromArray(argos.getAmplitudes(), w, h));
+//			float[][] normImg = getImageFromArray(amp, w, h);
+			
+			//croping image to reduce noise. needs to be readjusted when cameras are relocated
+			//normImg = ITools.crop(30, 40, 120, 100, normImg);	
+			float[][] normImgCropped = ITools.crop( 160-120, 25,160-30, 85, normImg);
+			
+//			image = byteArrayToMat(ITools.normalize(normImg));
+//			finalDisplay=bufferedImageFromGrayMat(image);
+//	        blobDetector.detect(image, matOfKeyPoints);
+//
+//	        System.out.println("Detected " + matOfKeyPoints.size()+ " blobs in the image");
+//	        keyPoints = matOfKeyPoints.toArray();
+//	        finalDisplay.getGraphics().setColor(java.awt.Color.RED);
+//			for(i=0;i<5;i++){
+//				KeyPoint k = keyPoints[i];
+//				finalDisplay.getGraphics().drawOval((int)k.pt.x, (int)k.pt.y, (int)k.size, (int)k.size);
+//			}
+	        
 			disp.setImage(ImageManipulation.getGrayBufferedImage(ITools.normalize(normImg)));
+			
+//        	ImageManipulation.writeImage(ITools.normalize(normImg), pathToImg+"dist"+(i++)+".tiff"); 
+//        	ImageManipulation.writeImage(ITools.normalize(normImgCropped), pathToImg+"distC"+(i++)+".tiff"); 
+//        	ImageManipulation.writeImage(ITools.normalize(amplitudes), pathToImg+"amp"+(i++)+".tiff"); 
+//        	saveFloatArrayToFile(pathToImg+"raw"+(i++)+".bin", rawDist);
+			
+//	        if(finalDisplay!=null){
+//	        	disp.setImage(finalDisplay);     	
+//	        }
 		}
 		argos.close();
+		//Saving images end
 		
 ////		Mat bg = Imgcodecs.imread(pathToImg+"img0.tiff");
 ////		new IViewer("Background",bufferedImageFromMat(bg));
@@ -174,19 +222,19 @@ public class BaseSegmentation{
 //		new IViewer("No Background 1.0 x2",bufferedImageFromMat(output));
 		
 		
-//		Argos3D argos = new Argos3D();
+////		Argos3D argos = new Argos3D();
 //		argos.update();
 //		int rows = argos.getImageData().numRows;
 //		int cols = argos.getImageData().numColumns;
 //		System.out.println("Rows: "+rows);
 //		System.out.println("Cols: "+cols);
 //		
-//		float[] amp, dist;
+////		float[] amp, dist;
 //		float maxA, maxD, maxT;
 //		byte[][] imgA = new byte[rows][cols];
 //		byte[][] imgD = new byte[rows][cols];
 //		int c = 0;
-////		IViewer view = new IViewer(ImageManipulation.getGrayBufferedImage(imgG));
+//		IViewer view = new IViewer(ImageManipulation.getGrayBufferedImage(imgG));
 //		
 //		String path = "/media/harold/DataLPC/BReader/Background Removal Test/cardboardNN/";
 //		
@@ -214,20 +262,57 @@ public class BaseSegmentation{
 ////			ImageManipulation.writeImage(imgA, path+"imgA"+t+"Bck.tiff");
 ////			ImageManipulation.writeImage(imgD, path+"imgD"+t+"Bck.tiff");
 //
-//			ImageManipulation.writeImage(imgA, path+"imgA"+t+"Tb.tiff");
-//			ImageManipulation.writeImage(imgD, path+"imgD"+t+"Tb.tiff");
+////			ImageManipulation.writeImage(imgA, path+"imgA"+t+"Tb.tiff");
+////			ImageManipulation.writeImage(imgD, path+"imgD"+t+"Tb.tiff");
 //			
-////			view.setImage(ImageManipulation.getGrayBufferedImage(imgG));
+//			view.setImage(ImageManipulation.getGrayBufferedImage(amp));
 //		}
 //				
 //		argos.close();
 		
 	}
 	
+	public static void saveFloatArrayToFile(String file, float[] array){
+		try {
+			java.io.OutputStream out = new java.io.FileOutputStream(file);
+			for(float f: array){
+				out.write(Float.floatToIntBits(f));
+			}
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void saveFloatArrayToFile(String file, float[][] array){
+		try {
+			java.io.OutputStream out = new java.io.FileOutputStream(file);
+			for(int y=0; y<array.length; y++){
+				for(int x=0; x<array[0].length; x++){
+					out.write(Float.floatToIntBits(array[y][x]));
+				}
+			}
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static Mat bufferedImageToMat(BufferedImage bi) {
 		Mat mat = new Mat(bi.getHeight(), bi.getWidth(), CvType.CV_8UC3);
 		byte[] data = ((DataBufferByte) bi.getRaster().getDataBuffer()).getData();
 		mat.put(0, 0, data);
+		return mat;
+	}
+	
+	public static Mat byteArrayToMat(byte[][] bi) {
+		Mat mat = new Mat(bi.length, bi[0].length, CvType.CV_8UC1);
+		for(int i=0; i<bi.length; i++)
+			mat.put(i, 0, bi[i]);
 		return mat;
 	}
 	
@@ -286,6 +371,17 @@ public class BaseSegmentation{
 			}
 		}
 		return img;
+	}
+	
+	public static float[][] getHorizontalFlip(float[][] src){
+		int[] s = new int[]{src.length, src[0].length};
+		float[][] out = new float[s[0]][s[1]];
+		for(int y=0; y<s[0]; y++){
+			for(int x=0; x<s[1]; x++){
+				out[y][s[1]-1-x]=src[y][x];
+			}
+		}
+		return out;
 	}
 	
 	public static float[] addArray(float[] a1, float[] a2){

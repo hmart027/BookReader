@@ -7,8 +7,12 @@ import img.ImageManipulation;
 public class BookCoregistration {
 	
 	private BookCoregistration(){
-		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/IMG_1769.JPG"));
-		byte[][] img  = xMirror(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/amp631.tiff")[0]);
+//		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/IMG_1769.JPG"));
+//		byte[][] img  = xMirror(ImageManipulation.loadImage("/media/DATA/School/Research/BookReader/3-17-17-trials/amp631.tiff")[0]);
+		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage("/home/harold/Pictures/3-17-17-trials/IMG_1769.JPG"));
+		byte[][] img  = xMirror(ImageManipulation.loadImage("/home/harold/Pictures/3-17-17-trials/amp631.tiff")[0]);
+		
+		
 		
 		float hScale = (float)temp.length/(float)img.length;
 		float wScale = (float)temp[0].length/(float)img[0].length;
