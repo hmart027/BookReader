@@ -142,20 +142,27 @@ public class BaseSegmentation{
 		
         float[] filtDist, averageRes;
 		while((dist = argos.getDistances())!=null){
+//			amp = filter.filter(argos.getDistances());
 //			float normVal = disp.getNormVal();
-//			for(int i=0; i<img.length; i++){
-//				img[i] = (byte) ((255f/normVal)*amp[i]);
+//			float max = amp[0];
+//			for(int x=0; x<img.length; x++){
+//				if(amp[x]>max) max = amp[x];
+//				img[x] = (byte) ((255f/normVal)*amp[x]);
 //			}
+//			disp.setActualMax((int)max);
+			
 			filtDist = filter.filter(dist);
 			averageRes = subArray(filtDist, base);
-			float[][] rawDist = getHorizontalFlip(getImageFromArray(filtDist, w, h));
+//			float[][] rawrawDist = getHorizontalFlip(getImageFromArray(dist, w, h));
+//			float[][] rawDist = getHorizontalFlip(getImageFromArray(filtDist, w, h));
 			float[][] normImg = getHorizontalFlip(getImageFromArray(averageRes, w, h));
-			float[][] amplitudes = getHorizontalFlip(getImageFromArray(argos.getAmplitudes(), w, h));
+//			float[][] amplitudes = getHorizontalFlip(getImageFromArray(argos.getAmplitudes(), w, h));
+			float[][] normImgCropped = ITools.crop( 160-120, 25,160-30, 85, normImg);
+			
 //			float[][] normImg = getImageFromArray(amp, w, h);
 			
 			//croping image to reduce noise. needs to be readjusted when cameras are relocated
 			//normImg = ITools.crop(30, 40, 120, 100, normImg);	
-			float[][] normImgCropped = ITools.crop( 160-120, 25,160-30, 85, normImg);
 			
 //			image = byteArrayToMat(ITools.normalize(normImg));
 //			finalDisplay=bufferedImageFromGrayMat(image);
@@ -168,8 +175,9 @@ public class BaseSegmentation{
 //				KeyPoint k = keyPoints[i];
 //				finalDisplay.getGraphics().drawOval((int)k.pt.x, (int)k.pt.y, (int)k.size, (int)k.size);
 //			}
-	        
-			disp.setImage(ImageManipulation.getGrayBufferedImage(ITools.normalize(normImg)));
+
+//			disp.setImage(ImageManipulation.getGrayBufferedImage(img));
+			disp.setImage(ImageManipulation.getGrayBufferedImage(ITools.normalize(normImgCropped)));
 			
 //        	ImageManipulation.writeImage(ITools.normalize(normImg), pathToImg+"dist"+(i++)+".tiff"); 
 //        	ImageManipulation.writeImage(ITools.normalize(normImgCropped), pathToImg+"distC"+(i++)+".tiff"); 
@@ -354,7 +362,7 @@ public class BaseSegmentation{
 	public static byte[][] getImageFromArray(byte[] bi, int w, int h) {
 		byte[][] img = new byte[h][w];
 		int c = 0;
-		for(int y=0; y<h; h++){
+		for(int y=0; y<h; y++){
 			for(int x=0; x<w; x++){
 				img[y][x]=bi[c++];
 			}
@@ -376,6 +384,17 @@ public class BaseSegmentation{
 	public static float[][] getHorizontalFlip(float[][] src){
 		int[] s = new int[]{src.length, src[0].length};
 		float[][] out = new float[s[0]][s[1]];
+		for(int y=0; y<s[0]; y++){
+			for(int x=0; x<s[1]; x++){
+				out[y][s[1]-1-x]=src[y][x];
+			}
+		}
+		return out;
+	}
+	
+	public static byte[][] getHorizontalFlip(byte[][] src){
+		int[] s = new int[]{src.length, src[0].length};
+		byte[][] out = new byte[s[0]][s[1]];
 		for(int y=0; y<s[0]; y++){
 			for(int x=0; x<s[1]; x++){
 				out[y][s[1]-1-x]=src[y][x];

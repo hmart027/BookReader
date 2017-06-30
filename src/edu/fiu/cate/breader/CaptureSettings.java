@@ -34,6 +34,7 @@ public class CaptureSettings extends JFrame {
 	private JCheckBox checkBox;
 	private JFormattedTextField minValueField;
 	private JFormattedTextField maxValueField;
+	private JFormattedTextField actualMax;
 	
 	float normVal=6000;
 	float maxNorm = 65535;
@@ -55,13 +56,14 @@ public class CaptureSettings extends JFrame {
 		captureDisplay.setBackground(Color.DARK_GRAY);	
 		slider = new JSlider();
 		slider.setMaximum(1000);
+		slider.setValue((int)(normVal/maxNorm*1000));
 		NumberFormat nformat = NumberFormat.getNumberInstance();
 		nformat.setMinimumFractionDigits(1);
 		textField = new JFormattedTextField(nformat);
-		textField.setColumns(10);	
+		textField.setColumns(10);
 		checkBox = new JCheckBox("");
 		
-		textField.setValue(0.0);
+		textField.setValue(normVal);
 		slider.addChangeListener(new ChangeListener() {		
 			@Override
 			public void stateChanged(ChangeEvent e) {
@@ -123,6 +125,10 @@ public class CaptureSettings extends JFrame {
 		
 		JLabel lblMax = new JLabel("Max:");
 		JLabel lblMin = new JLabel("Min:");
+		
+		actualMax = new JFormattedTextField(nformat);
+		actualMax.setEditable(false);
+		actualMax.setColumns(10);
 			
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(
@@ -130,30 +136,30 @@ public class CaptureSettings extends JFrame {
 				.addGroup(gl_contentPane.createSequentialGroup()
 					.addContainerGap(18, 18)
 					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-						.addGroup(Alignment.TRAILING, gl_contentPane.createSequentialGroup()
+						.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 739, 2000)
+						.addGroup(gl_contentPane.createSequentialGroup()
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-								.addGroup(gl_contentPane.createSequentialGroup()
-									.addComponent(checkBox)
-									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(lblNormalization))
-								.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 739, 2000))
-							.addContainerGap(18, 18))
-						.addGroup(Alignment.TRAILING, gl_contentPane.createSequentialGroup()
-							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+								.addComponent(checkBox)
 								.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 								.addComponent(slider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-							.addPreferredGap(ComponentPlacement.RELATED, 170, Short.MAX_VALUE)
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 								.addGroup(gl_contentPane.createSequentialGroup()
-									.addComponent(lblMin)
 									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+									.addComponent(lblNormalization))
 								.addGroup(gl_contentPane.createSequentialGroup()
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(lblMax)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-							.addContainerGap(231, Short.MAX_VALUE))))
+									.addGap(42)
+									.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_contentPane.createSequentialGroup()
+											.addComponent(lblMin)
+											.addPreferredGap(ComponentPlacement.UNRELATED)
+											.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+										.addGroup(gl_contentPane.createSequentialGroup()
+											.addComponent(lblMax)
+											.addPreferredGap(ComponentPlacement.RELATED)
+											.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+											.addGap(129)
+											.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))))))
+					.addContainerGap(24, 24))
 		);
 		gl_contentPane.setVerticalGroup(
 			gl_contentPane.createParallelGroup(Alignment.LEADING)
@@ -161,16 +167,15 @@ public class CaptureSettings extends JFrame {
 					.addGap(24)
 					.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 238, 1000)
 					.addGap(39)
-					.addGroup(gl_contentPane.createParallelGroup(Alignment.TRAILING)
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+						.addComponent(checkBox)
+						.addComponent(lblNormalization))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_contentPane.createSequentialGroup()
-							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-								.addComponent(checkBox)
-								.addComponent(lblNormalization))
-							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(slider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addGap(32))
+							.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_contentPane.createSequentialGroup()
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
 								.addComponent(lblMin)
@@ -178,8 +183,9 @@ public class CaptureSettings extends JFrame {
 							.addPreferredGap(ComponentPlacement.UNRELATED)
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
 								.addComponent(lblMax)
-								.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-							.addGap(39))))
+								.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+								.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))
+					.addGap(32))
 		);
 		contentPane.setLayout(gl_contentPane);
 		
@@ -194,5 +200,9 @@ public class CaptureSettings extends JFrame {
 		
 	public void setImage(BufferedImage img){
 		this.captureDisplay.setImage(img);
+	}
+	
+	public void setActualMax(int max){
+		this.actualMax.setText(max+"");
 	}
 }
