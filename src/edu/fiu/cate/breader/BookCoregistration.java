@@ -6,12 +6,18 @@ import img.ImageManipulation;
 
 public class BookCoregistration {
 	
-	String drive = "";
+	String drive, imgDir, highResName, lowResName;
 	
 	private BookCoregistration(){
-		checkOS();
-		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage(drive + "School/Research/BookReader/3-17-17-trials/IMG_1769.JPG"));
-		byte[][] img  = xMirror(ImageManipulation.loadImage(drive + "School/Research/BookReader/3-17-17-trials/amp631.tiff")[0]);
+//		checkOS();
+		
+		drive = "/media/harold/DataLPC/";
+		imgDir = "BReader/6-30-17/";
+		highResName = "IMG_1793.JPG";
+		lowResName = "";
+		
+		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage(drive + imgDir + highResName));
+		byte[][] img  = xMirror(ImageManipulation.loadImage(drive + imgDir + lowResName)[0]);
 		
 		float hScale = (float)temp.length/(float)img.length;
 		float wScale = (float)temp[0].length/(float)img[0].length;
