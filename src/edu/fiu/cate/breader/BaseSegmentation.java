@@ -61,7 +61,7 @@ public class BaseSegmentation{
 		String imgType = "test"; //ampdata
 		String pathToImg = "/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/";
 		pathToImg = "/media/harold/DataLPC/BReader/Background Removal Test/cardboardNN/";
-		pathToImg = "/home/harold/Pictures/6-30-17/";
+		pathToImg = "/media/harold/DataLPC/BReader/7-16-17/";
 		String extension = "tiff"; //tiff
 		
 		Mat image = null, fgMask = null, output = null;
@@ -153,10 +153,10 @@ public class BaseSegmentation{
 			
 			filtDist = filter.filter(dist);
 			averageRes = subArray(filtDist, base);
-//			float[][] rawrawDist = getHorizontalFlip(getImageFromArray(dist, w, h));
-//			float[][] rawDist = getHorizontalFlip(getImageFromArray(filtDist, w, h));
+			float[][] rawrawDist = getHorizontalFlip(getImageFromArray(dist, w, h));
+			float[][] rawDist = getHorizontalFlip(getImageFromArray(filtDist, w, h));
 			float[][] normImg = getHorizontalFlip(getImageFromArray(averageRes, w, h));
-//			float[][] amplitudes = getHorizontalFlip(getImageFromArray(argos.getAmplitudes(), w, h));
+			float[][] amplitudes = getHorizontalFlip(getImageFromArray(argos.getAmplitudes(), w, h));
 			float[][] normImgCropped = ITools.crop( 160-120, 25,160-30, 85, normImg);
 			
 //			float[][] normImg = getImageFromArray(amp, w, h);
@@ -179,10 +179,10 @@ public class BaseSegmentation{
 //			disp.setImage(ImageManipulation.getGrayBufferedImage(img));
 			disp.setImage(ImageManipulation.getGrayBufferedImage(ITools.normalize(normImgCropped)));
 			
-//        	ImageManipulation.writeImage(ITools.normalize(normImg), pathToImg+"dist"+(i++)+".tiff"); 
-//        	ImageManipulation.writeImage(ITools.normalize(normImgCropped), pathToImg+"distC"+(i++)+".tiff"); 
-//        	ImageManipulation.writeImage(ITools.normalize(amplitudes), pathToImg+"amp"+(i++)+".tiff"); 
-//        	saveFloatArrayToFile(pathToImg+"raw"+(i++)+".bin", rawDist);
+        	ImageManipulation.writeImage(ITools.normalize(normImg), pathToImg+"dist"+(i++)+".tiff"); 
+        	ImageManipulation.writeImage(ITools.normalize(normImgCropped), pathToImg+"distC"+(i++)+".tiff"); 
+        	ImageManipulation.writeImage(ITools.normalize(amplitudes), pathToImg+"amp"+(i++)+".tiff"); 
+        	saveFloatArrayToFile(pathToImg+"raw"+(i++)+".bin", rawDist);
 			
 //	        if(finalDisplay!=null){
 //	        	disp.setImage(finalDisplay);     	

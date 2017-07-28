@@ -14,10 +14,10 @@ public class BookCoregistration {
 		drive = "/media/harold/DataLPC/";
 		imgDir = "BReader/6-30-17/";
 		highResName = "IMG_1793.JPG";
-		lowResName = "";
+		lowResName = "amp1002.tiff";
 		
 		byte[][] temp = ITools.toGrayscale(ImageManipulation.loadImage(drive + imgDir + highResName));
-		byte[][] img  = xMirror(ImageManipulation.loadImage(drive + imgDir + lowResName)[0]);
+		byte[][] img  = ImageManipulation.loadImage(drive + imgDir + lowResName)[0];
 		
 		float hScale = (float)temp.length/(float)img.length;
 		float wScale = (float)temp[0].length/(float)img[0].length;
@@ -36,8 +36,10 @@ public class BookCoregistration {
 //		new IViewer("CorrRez", ImageManipulation.getGrayBufferedImage(resize(img, 2.0f)));
 
 //		coregister(temp, imgRez);
-		coregister(tempRez, img);
+//		coregister(tempRez, img);
 //		new IViewer("Correlation", ImageManipulation.getGrayBufferedImage(ITools.normalize(coregister(temp, imgRez))));
+		
+		stepestDescent(tempRez, img, tempRez, img, 0, 0, 1);
 		
 	}
 	
@@ -91,6 +93,63 @@ public class BookCoregistration {
 		System.out.println("Max zoom: "+maxCorr+", "+maxRFactor);
 		return out;
 	}
+	
+	public void stepestDescent(byte[][] templateO, byte[][] imgO, byte[][] templateC, byte[][] imgC, int lX, int lY, float lZ){
+		double xp, xn, yp, yn, zp, zn;
+		
+		double cre = normCrossCorr( templateO, resizeAndCrop( shiftImage(imgO, lX, lY), lZ, templateO.length, templateO[0].length));
+		
+		xp = normCrossCorr( templateO, shiftImage(imgO, lX+1, lY));
+		xn = normCrossCorr( templateO, shiftImage(imgO, lX-1, lY));
+
+		yp = normCrossCorr( templateO, shiftImage(imgO, lX, lY+1));
+		yn = normCrossCorr( templateO, shiftImage(imgO, lX, lY-1));
+		
+		zp = normCrossCorr( resizeAndCrop(templateO, lZ-0.1f, templateO.length, templateO[0].length),  shiftImage(imgO, lX, lY));
+		zn = normCrossCorr( templateO, resizeAndCrop( shiftImage(imgO, lX, lY), lZ-0.1f, templateO.length, templateO[0].length));
+		
+		double xg, yg, zg;
+		
+		xg = (xp - xn)/2;
+		yg = (yp - yn)/2;
+		zg = (zp - zn)/0.2;	
+
+		System.out.println(cre);
+//		System.out.println();
+//		
+//		System.out.println(xp);
+//		System.out.println(xn);
+//		System.out.println(xg/cre);
+//		System.out.println();
+//
+//		System.out.println(yp);
+//		System.out.println(yn);
+//		System.out.println(yg/cre);
+//		System.out.println();
+//		
+//		System.out.println(zp);
+//		System.out.println(zn);
+//		System.out.println(zg/cre);
+//		System.out.println();
+		
+		int xS, yS;
+		double zS;
+		xS = (xg!=0) ? (int)Math.signum(xg) : 0;
+		yS = (yg!=0) ? (int)Math.signum(yg) : 0;
+		zS = (zg!=0) ? Math.signum(zg)*0.1 : 0;
+		
+		if((xS!=0) || (yS!=0) || (Math.abs(zS)>=0.1)){
+			stepestDescent(templateO, imgO, templateC, imgC, lX+xS, lY+yS, (float)(lZ+zS));
+		}else{
+			System.out.println(lX);
+			System.out.println(lY);
+			System.out.println(lZ);
+			new IViewer("MaxCorrRez", ImageManipulation.getGrayBufferedImage(resizeAndCrop(shiftImage(imgO, lX, lY), lZ, templateC.length, templateC[0].length)));
+			return;
+		}
+		
+	}
+	
 	
 	public byte[][] xMirror(byte[][] img){
 		int[] imgDim  = new int[]{img.length, img[0].length};
@@ -329,7 +388,7 @@ public class BookCoregistration {
 		return out;
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) {		
 		new BookCoregistration();
 	}
 
