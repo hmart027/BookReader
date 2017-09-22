@@ -13,5 +13,7 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Argos3DJNI/Release"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/gphoto2-java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/MathTools"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

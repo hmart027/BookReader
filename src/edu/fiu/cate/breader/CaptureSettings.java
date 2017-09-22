@@ -12,6 +12,7 @@ import javax.swing.GroupLayout.Alignment;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -23,6 +24,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.JLabel;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
+import javax.swing.JButton;
 
 public class CaptureSettings extends JFrame {
 
@@ -35,6 +37,7 @@ public class CaptureSettings extends JFrame {
 	private JFormattedTextField minValueField;
 	private JFormattedTextField maxValueField;
 	private JFormattedTextField actualMax;
+	private JButton btnCapture;
 	
 	float normVal=6000;
 	float maxNorm = 65535;
@@ -129,6 +132,9 @@ public class CaptureSettings extends JFrame {
 		actualMax = new JFormattedTextField(nformat);
 		actualMax.setEditable(false);
 		actualMax.setColumns(10);
+		
+		btnCapture = new JButton("Capture");
+		btnCapture.setEnabled(false);
 			
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(
@@ -158,7 +164,9 @@ public class CaptureSettings extends JFrame {
 											.addPreferredGap(ComponentPlacement.RELATED)
 											.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 											.addGap(129)
-											.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))))))
+											.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+												.addComponent(btnCapture)
+												.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))))))
 					.addContainerGap(24, 24))
 		);
 		gl_contentPane.setVerticalGroup(
@@ -169,7 +177,9 @@ public class CaptureSettings extends JFrame {
 					.addGap(39)
 					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 						.addComponent(checkBox)
-						.addComponent(lblNormalization))
+						.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
+							.addComponent(lblNormalization)
+							.addComponent(btnCapture)))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_contentPane.createSequentialGroup()
@@ -204,5 +214,13 @@ public class CaptureSettings extends JFrame {
 	
 	public void setActualMax(int max){
 		this.actualMax.setText(max+"");
+	}
+	
+	public void addCaptureActionListener(ActionListener a){
+		btnCapture.addActionListener(a);
+	}
+	
+	public void enableCapture(boolean e){
+		btnCapture.setEnabled(e);
 	}
 }
