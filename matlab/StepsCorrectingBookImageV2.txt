@@ -1,0 +1,17 @@
+DepthCap.m
+	Is used to capture the Lower resolution amplitude data and depth information
+	(First the scene of the base only and when prompted with desired book at this point
+	the second and separte code and source should be use to caputer the desired book )
+DepthCapHres2.m
+	Input the low resolution image and high resolution image and this function will allow 	
+	you to select and register the images based on common points selected (select 3 		
+	points). this will produce a high res raw depth map which should match the HD image
+DepthCapHresmod6.m
+	This function uses the high res information from DepthCapHres2 to transform the HD 		
+	image the resulting image should be the flatten one (The image is reconstructed via 		
+	interp2 by using the inverse of the flatening function to determine interger 		
+	locations)
+DepthCapHresmodext5.m
+	This function should be used after DepthCapHresmod6. This funtion will extend the 		
+	image based and the height to reconstruct it via triscattered interpolation (you can 	
+	select which method of interpolation to use here)	

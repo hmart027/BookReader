@@ -32,6 +32,7 @@ import math2.Vector;
 public class BaseSegmentation{
 	
 	static{ 
+		// Load OpenCV library
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME); 	
 	}
 	
@@ -150,6 +151,12 @@ public class BaseSegmentation{
 		return img;
 	}
 	
+	/**
+	 * Finds the bounding box for the book on the stand using 
+	 * the high resolution image.
+	 * @param src- High Resolution image of the book
+	 * @return Rectangle delineating the book
+	 */
 	public Rect highRes(Mat src){
 		Mat dst = src.clone();
 		Imgproc.blur(src, dst, new Size(100.0, 100.0), new Point(-1,-1), Core.BORDER_REPLICATE);
@@ -214,6 +221,12 @@ public class BaseSegmentation{
 		return out;
 	}
 	
+	/**
+	 * Finds the bounding box for the book on the stand using 
+	 * the depth average image.
+	 * @param src- The Depth average image
+	 * @return Rectangle delineating the book
+	 */
 	public Rect lowResDist(Mat src){
 		Mat dst = src.clone();
 
@@ -250,6 +263,10 @@ public class BaseSegmentation{
 		return Imgproc.boundingRect(new MatOfPoint(tHullPoints));
 	}
 	
+	/**
+	 * Capture button has been press. Obtain the high resolution image and the low resolution 
+	 * data. Once captured, the images are corrected. 
+	 */
 	public void captureEvent(){
 		byte[][][] img = getHidefImage();
 		Rect bound = highRes(BReaderTools.byteArrayToMat(ITools.toGrayscale(img)));
