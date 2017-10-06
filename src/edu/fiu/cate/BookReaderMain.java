@@ -22,7 +22,7 @@ public class BookReaderMain {
 	
 	public static double[] P = new double[]{0.016, -0.042, 0, 1.026};
 	
-	public static float cameraHeight = 58.05f;
+	public static float cameraHeight = 53f;//58.05f;
 	public static int defaultBookSupportHeight = 350;
 	public static int pixelActivationTh = 127;
 	public static File folder;
@@ -614,6 +614,47 @@ public class BookReaderMain {
 //		    			nImg[h][w][3] = img[y][x][3];
 		    		}
     		}
+	    	}
+	    }
+		return nImg;
+	}
+	
+	public static byte[][] foldCorrection(byte[][] img, float[][] heights){
+	    
+	    int height = img.length;
+	    int width = img[0].length;
+	    
+	    int xc = width/2;
+	    int yc = height/2;
+	    
+	    byte[][] nImg = new byte[height][width];
+	    
+	    for(int h = 0; h < height; h++){
+	    	for(int w = 0; w < width; w++){
+	       		
+	    		//retrieving from copy
+	    		float nx = (float) (xc - ((xc-w)*(cameraHeight/(cameraHeight-heights[h][w]))));
+	    		float ny = (float) (yc - ((yc-h)*(cameraHeight/(cameraHeight-heights[h][w]))));
+	    		int x = (int) nx;
+	    		int y = (int) ny;
+	    		
+	    		float xRem = nx%(float)x;
+	    		float yRem = ny%(float)y;
+	    		
+	    		if(xRem != 0.00 || yRem != 0.00 ){
+	    			float d11 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d12 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d21 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float d22 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float dt = d11 + d12 + d21 + d22;
+	    			if(y>0 && y+1<height && x>0 && x+1<width){
+	    				nImg[h][w] = (byte) ((d11*(float)(img[y][x] & 0x0FF)+d12*(float)(img[y][x+1] & 0x0FF)+d21*(float)(img[y+1][x] & 0x0FF)+d22*(float)(img[y+1][x+1] & 0x0FF))/dt);
+	    			}
+	    		}else{
+		    		if(y>0 && y<height && x>0 && x<width){
+		    			nImg[h][w] = img[y][x];
+		    		}
+	    		}
 	    	}
 	    }
 		return nImg;

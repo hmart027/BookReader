@@ -22,11 +22,14 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import com.bluetechnix.argos.Argos3D;
+
+import edu.fiu.cate.BookReaderMain;
 import edu.fiu.cate.breader.tools.BReaderTools;
 import edu.fiu.cate.breader.tools.RollingImageFilter;
 import image.tools.ITools;
 import image.tools.IViewer;
 import img.ImageManipulation;
+import math2.Matrix;
 import math2.Vector;
 
 public class BaseSegmentation{
@@ -143,6 +146,7 @@ public class BaseSegmentation{
 		final CameraFile cf2 = c.captureImage();
 		java.io.File imageFile = new java.io.File("captured.jpg"); 
 		cf2.save(imageFile.getAbsolutePath());
+		cf2.clean();
 		CameraUtils.closeQuietly(cf2);
 		CameraUtils.closeQuietly(c);
 		
@@ -273,17 +277,169 @@ public class BaseSegmentation{
 		
 		Mat imgMat = BReaderTools.byteArrayToMat(img);
 		Imgproc.rectangle(imgMat, bound.tl(), bound.br(), new Scalar(255,255,0), 8);
-		
-		new IViewer(BReaderTools.bufferedImageFromMat(imgMat));
-		
+				
 		byte[][] low = ITools.normalize(normImgCropped);
 		Rect boundLow = lowResDist(BReaderTools.byteArrayToMat(low));
 		
-		Mat color = new Mat();
-		Imgproc.cvtColor(BReaderTools.byteArrayToMat(low), color,Imgproc.COLOR_GRAY2BGR);
-		Imgproc.rectangle(color, boundLow.tl(), boundLow.br(), new Scalar(255,255,0), 1);
+		//Show the cropped height map with the bounding box
+//		Mat color = new Mat();
+//		Imgproc.cvtColor(BReaderTools.byteArrayToMat(low), color,Imgproc.COLOR_GRAY2BGR);
+//		Imgproc.rectangle(color, boundLow.tl(), boundLow.br(), new Scalar(255,255,0), 1);
+//		new IViewer(BReaderTools.bufferedImageFromMat(color));
 		
-		new IViewer(BReaderTools.bufferedImageFromMat(color));
+//		System.out.println(bound.height+", "+bound.width+": "+(double)bound.width/(double)bound.height);
+//		System.out.println(boundLow.height+", "+boundLow.width+": "+(double)boundLow.width/(double)boundLow.height);
+		
+		double rW = (double)bound.width/(double)boundLow.width;
+		double rH = (double)bound.height/(double)boundLow.height;
+		int h = 0,w = 0, yO = 0, xO = 0;
+		double s = 0;
+		
+		if(rH<rW) {
+			s = rH;
+			h = boundLow.height;
+			w = (int) (bound.width/rH);
+			if((w-boundLow.width)%2==0) {
+				xO = (boundLow.width-w)/2;
+			} 
+		}else {
+			s = rW;
+			h = (int) (bound.height/rW);
+			w = boundLow.width;
+			if((h-boundLow.height)%2==0) {
+				yO = (boundLow.height-h)/2;
+			}
+		}
+
+		//show the high resolution image cropped
+		byte[][][] hiRez = new byte[img.length][][];
+		for(int i = 0 ; i< img.length; i++) {
+				hiRez[i] = ITools.crop(bound.x, bound.y, bound.x+bound.width, bound.y+bound.height,img[i]);
+		}
+		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
+		
+		//Show the IR amplitude image cropped
+//		byte[][] amp = ITools.normalize(amplitudes);
+//		byte[][] ampRez = resize(amp, (float)s);
+//		int x0 = (int) ((boundLow.x+xO+40)*s), y0 = (int) ((boundLow.y+yO+25)*s);
+//		ampRez = ITools.crop(x0, y0, x0+bound.width, y0+bound.height, ampRez);
+//		new IViewer(ImageManipulation.getGrayBufferedImage(ampRez));
+		
+		//Show the Amplitude image in bounding box
+//		Rect nBound = new Rect(boundLow.x+xO+40, boundLow.y+yO+25, w, h);
+//		Mat gray = new Mat();
+//		Imgproc.cvtColor(BReaderTools.byteArrayToMat(ITools.normalize(amplitudes)), gray,Imgproc.COLOR_GRAY2BGR);
+//		Imgproc.rectangle(gray, nBound.tl(), nBound.br(), new Scalar(255,255,0), 1);
+//		new IViewer(BReaderTools.bufferedImageFromMat(gray));
+		
+//		new IViewer(BReaderTools.bufferedImageFromMat(imgMat));
+		
+		//Crop the distance image and prepare for correction
+		float[][] distRez = resize(normImg, (float)s);
+		int x0 = (int) ((boundLow.x+xO+40)*s), y0 = (int) ((boundLow.y+yO+25)*s);
+		distRez = ITools.crop(x0, y0, x0+bound.width, y0+bound.height, distRez);
+		distRez = multiply(distRez, -100);
+		
+		byte[][][] foldCorrected = new byte[hiRez.length][][];
+		for(int i=0; i<hiRez.length; i++) {
+			foldCorrected[i] = BookReaderMain.foldCorrection(hiRez[i], distRez);
+		}
+		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
+	}
+	
+	public static float[][] multiply(float[][] m, float a){
+		int[] l = new int[]{m.length,m[0].length};
+//		if(l1[0]!=l2[1] || l1[1]!=l2[0]) return null;
+		float out[][] = new float[l[0]][l[1]];
+		float max = out[0][0], min = out[0][0];
+		for(int y=0; y<l[0]; y++){
+			for(int x=0; x<l[1]; x++){
+				out[y][x] = m[y][x]*a;
+				if(out[y][x]>max) max = out[y][x];
+				if(out[y][x]<min) min = out[y][x];
+			}
+		}
+		System.out.println("Max: "+max);
+		System.out.println("Min: "+min);
+		return out;
+	}
+	
+	public static byte[][] resize(byte[][] img, float scale){
+	    
+		int height = img.length;
+	    int width = img[0].length;
+	    int heightN = (int) (img.length*scale);
+	    int widthN = (int) (img[0].length*scale);
+	    	    
+	    byte[][] nImg = new byte[heightN][widthN];
+	    
+	    float c = 1/scale;
+	    
+	    for(int h = 0; h < heightN; h++){
+    		float ny = h*c;
+    		int y = (int) ny;
+    		float yRem = ny%(float)y;
+	    	for(int w = 0; w < widthN; w++){
+	    		float nx = w*c;
+	    		int x = (int) nx;
+	    		float xRem = nx%(float)x;
+	    		
+	    		if(xRem != 0.00 || yRem != 0.00 ){
+	    			float d11 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d12 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d21 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float d22 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float dt = d11 + d12 + d21 + d22;
+	    			if(y>0 && y+1<height && x>0 && x+1<width){
+	    				nImg[h][w] = (byte) ((d11*(float)(img[y][x] & 0x0FF)+d12*(float)(img[y][x+1] & 0x0FF)+d21*(float)(img[y+1][x] & 0x0FF)+d22*(float)(img[y+1][x+1] & 0x0FF))/dt);
+	    			}
+	    		}else{
+		    		if(y>0 && y<height && x>0 && x<width){
+		    			nImg[h][w] = img[y][x];
+		    		}
+	    		}	
+	    	}
+	    }
+		return nImg;
+	}
+	
+	public static float[][] resize(float[][] img, float scale){
+	    
+		int height = img.length;
+	    int width = img[0].length;
+	    int heightN = (int) (img.length*scale);
+	    int widthN = (int) (img[0].length*scale);
+	    	    
+	    float[][] nImg = new float[heightN][widthN];
+	    
+	    float c = 1/scale;
+	    
+	    for(int h = 0; h < heightN; h++){
+    		float ny = h*c;
+    		int y = (int) ny;
+    		float yRem = ny%(float)y;
+	    	for(int w = 0; w < widthN; w++){
+	    		float nx = w*c;
+	    		int x = (int) nx;
+	    		float xRem = nx%(float)x;
+	    		
+	    		if(xRem != 0.00 || yRem != 0.00 ){
+	    			float d11 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d12 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(yRem, 2), 0.5f));
+	    			float d21 = (float) (1f/Math.pow(Math.pow(xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float d22 = (float) (1f/Math.pow(Math.pow(1-xRem, 2)+Math.pow(1-yRem, 2), 0.5f));
+	    			float dt = d11 + d12 + d21 + d22;
+	    			if(y>0 && y+1<height && x>0 && x+1<width){
+	    				nImg[h][w] = (float) ((d11*img[y][x]+d12*img[y][x+1]+d21*img[y+1][x]+d22*img[y+1][x+1])/dt);
+	    			}
+	    		}else{
+		    		if(y>0 && y<height && x>0 && x<width){
+		    			nImg[h][w] = img[y][x];
+		    		}
+	    		}	
+	    	}
+	    }
+		return nImg;
 	}
 	
 	public static void main(String[] args){
