@@ -341,9 +341,12 @@ public class BaseSegmentation{
 		distRez = multiply(distRez, -100);
 		
 		byte[][][] foldCorrected = new byte[hiRez.length][][];
+		System.out.println("Starting fold correction");
+		long t0 = System.currentTimeMillis();
 		for(int i=0; i<hiRez.length; i++) {
 			foldCorrected[i] = BookReaderMain.foldCorrection(hiRez[i], distRez);
 		}
+		System.out.println("Done: "+(System.currentTimeMillis()-t0)/1000.0);
 		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
 	}
 	
@@ -396,12 +399,12 @@ public class BaseSegmentation{
 	    		}
 	    		nx+=c;
 	    		x = (int) nx;
-	    		xRem = nx%1;
+	    		xRem = nx-x;
 	    		xRem2 = xRem*xRem;	
 	    	}
     		ny += c;
     		y = (int) ny;
-    		yRem = ny%1;
+    		yRem = ny-y;
     		yRem2 = yRem*yRem;
 	    }
 		return nImg;
@@ -445,28 +448,28 @@ public class BaseSegmentation{
 	    		}
 	    		nx+=c;
 	    		x = (int) nx;
-	    		xRem = nx%1;
+	    		xRem = nx-x;
 	    		xRem2 = xRem*xRem;
 	    	}
     		ny += c;
     		y = (int) ny;
-    		yRem = ny%1;
+    		yRem = ny-y;
     		yRem2 = yRem*yRem;
 	    }
 		return nImg;
 	}
 	
 	public static void main(String[] args){
-//		new BaseSegmentation();
-		byte[][][] img = ImageManipulation.loadImage("/home/harold/Pictures/brain.jpg");
-		byte[][][] img2 = new byte[img.length][][];
-		long t0 = 0;
-		t0 = System.currentTimeMillis();
-		for(int c=0; c<img.length; c++){
-			img2[c]=resize(img[c], 2f);
-		}
-		System.out.println(System.currentTimeMillis()-t0);
-//		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
+		new BaseSegmentation();
+//		byte[][][] img = ImageManipulation.loadImage("/home/bookreader/Pictures/brain.jpg");
+//		byte[][][] img2 = new byte[img.length][][];
+//		long t0 = 0;
+//		t0 = System.currentTimeMillis();
+//		for(int c=0; c<img.length; c++){
+//			img2[c]=resize(img[c], 2f);
+//		}
+//		System.out.println(System.currentTimeMillis()-t0);
+////		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
 		
 	}
 }
