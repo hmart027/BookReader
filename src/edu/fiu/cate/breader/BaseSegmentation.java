@@ -419,57 +419,63 @@ public class BaseSegmentation{
 	    	    
 	    float[][] nImg = new float[heightN][widthN];
 	    float c = 1/scale;
-		float ny = 0, yRem = 0, yRem2=0;
+		double ny = 0, yRem = 0, yRem2 = 0, yRem12 = 0;
 		int y = 0;
-		float nx = 0, xRem = 0, xRem2 = 0;
+		double nx = 0, xRem = 0, xRem2 = 0, xRem12 = 0;
 		int x = 0;
-		float d11, d12, d21, d22, dt;
+		double d11, d12, d21, d22, dt;
 		
 	    for(int h = 0; h < heightN; h++){
-    		nx=0;
-    		x = 0;
-    		xRem = 0;
-    		xRem2 = 0;
-	    	for(int w = 0; w < widthN; w++){
-	    		
-	    		if(xRem != 0.00 || yRem != 0.00 ){
-	    			if(y>0 && y+1<height && x>0 && x+1<width){
-		    			d11 = (float) (1f/Math.sqrt(xRem2+yRem2));
-		    			d12 = (float) (1f/Math.sqrt((1-xRem)*(1-xRem)+yRem2));
-		    			d21 = (float) (1f/Math.sqrt(xRem2+(1-yRem)*(1-yRem)));
-		    			d22 = (float) (1f/Math.sqrt((1-xRem)*(1-xRem)+(1-yRem)*(1-yRem)));
-		    			dt = d11 + d12 + d21 + d22;
-	    				nImg[h][w] = (float) ((d11*img[y][x]+d12*img[y][x+1]+d21*img[y+1][x]+d22*img[y+1][x+1])/dt);
-	    			}
-	    		}else{
-		    		if(y>0 && y<height && x>0 && x<width){
-		    			nImg[h][w] = img[y][x];
+    		y = (int) ny;
+    		if(y>0 && y<height){
+        		yRem = ny-y;
+        		yRem2 = yRem*yRem;
+        		yRem12 = (1-yRem)*(1-yRem);
+        		nx=0;
+        		x = 0;
+		    	for(int w = 0; w < widthN; w++){
+		    		x = (int) nx;
+		    		if(x>0 && x<width){
+			    		xRem = nx-x;
+			    		if(xRem != 0.00 || yRem != 0.00 ){
+			    			if(y<height-1 && x<width-1){
+					    		xRem2 = xRem*xRem;
+					    		xRem12 = (1-xRem)*(1-xRem);
+				    			d11 = (1d/Math.sqrt(xRem2+yRem2));
+				    			d12 = (1d/Math.sqrt(xRem12+yRem2));
+				    			d21 = (1d/Math.sqrt(xRem2+yRem12));
+				    			d22 = (1d/Math.sqrt(xRem12+yRem12));
+				    			dt = d11 + d12 + d21 + d22;
+			    				nImg[h][w] = (float) ((d11*img[y][x]+d12*img[y][x+1]+d21*img[y+1][x]+d22*img[y+1][x+1])/dt);
+			    			}
+			    		}else{
+				    		nImg[h][w] = img[y][x];
+			    		}
 		    		}
-	    		}
-	    		nx+=c;
-	    		x = (int) nx;
-	    		xRem = nx-x;
-	    		xRem2 = xRem*xRem;
+		    		nx+=c;
+		    	}
 	    	}
     		ny += c;
-    		y = (int) ny;
-    		yRem = ny-y;
-    		yRem2 = yRem*yRem;
 	    }
 		return nImg;
 	}
 	
 	public static void main(String[] args){
-		new BaseSegmentation();
-//		byte[][][] img = ImageManipulation.loadImage("/home/bookreader/Pictures/brain.jpg");
-//		byte[][][] img2 = new byte[img.length][][];
-//		long t0 = 0;
-//		t0 = System.currentTimeMillis();
-//		for(int c=0; c<img.length; c++){
-//			img2[c]=resize(img[c], 2f);
-//		}
-//		System.out.println(System.currentTimeMillis()-t0);
-////		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
+//		new BaseSegmentation();
+		byte[][][] img = ImageManipulation.loadImage("/home/harold/Pictures/brain.jpg");
+		byte[][][] img2 = new byte[img.length][][];
+		long t0 = 0;
+		float dt = 0;
+		for(int i =0 ; i<100; i++){
+			t0 = System.currentTimeMillis();
+			for(int c=0; c<img.length; c++){
+				img2[c]=resize(img[c], 2f);
+			}
+			dt += (System.currentTimeMillis()-t0);
+		}
+		dt/=100.0;
+		System.out.println(dt);
+//		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
 		
 	}
 }

@@ -629,18 +629,18 @@ public class BookReaderMain {
 	    
 	    byte[][] nImg = new byte[height][width];
 	    int x = 0;
-	    float nx = 0, xRem = 0;
+	    double nx = 0, xRem = 0;
 	    int y = 0;
-	    float ny = 0, yRem = 0;
+	    double ny = 0, yRem = 0;
 	    
-	    float d11, d12, d21, d22, dt;
+	    double d11, d12, d21, d22, dt;
 	    
 	    for(int h = 0; h < height; h++){
 	    	for(int w = 0; w < width; w++){
 	       		
 	    		//retrieving from copy
-	    		nx = (float) (xc - ((xc-w)*(cameraHeight/(cameraHeight-heights[h][w]))));
-	    		ny = (float) (yc - ((yc-h)*(cameraHeight/(cameraHeight-heights[h][w]))));
+	    		nx = (xc - ((xc-w)*(1.0-cameraHeight/heights[h][w])));
+	    		ny = (yc - ((yc-h)*(1.0-cameraHeight/heights[h][w])));
 	    		x = (int) nx;
 	    		y = (int) ny;
 	    		xRem = nx-x;
@@ -648,12 +648,12 @@ public class BookReaderMain {
 	    		
 	    		if(xRem != 0.00 || yRem != 0.00 ){
 	    			if(y>0 && y+1<height && x>0 && x+1<width){
-		    			d11 = (float) (1f/Math.sqrt(xRem*xRem+yRem*yRem));
-		    			d12 = (float) (1f/Math.sqrt((1-xRem)*(1-xRem)+yRem*yRem));
-		    			d21 = (float) (1f/Math.sqrt(xRem*xRem+(1-yRem)*(1-yRem)));
-		    			d22 = (float) (1f/Math.sqrt((1-xRem)*(1-xRem)+(1-yRem)*(1-yRem)));
+		    			d11 = (1f/Math.sqrt(xRem*xRem+yRem*yRem));
+		    			d12 = (1f/Math.sqrt((1-xRem)*(1-xRem)+yRem*yRem));
+		    			d21 = (1f/Math.sqrt(xRem*xRem+(1-yRem)*(1-yRem)));
+		    			d22 = (1f/Math.sqrt((1-xRem)*(1-xRem)+(1-yRem)*(1-yRem)));
 		    			dt = d11 + d12 + d21 + d22;
-	    				nImg[h][w] = (byte) ((d11*(float)(img[y][x] & 0x0FF)+d12*(float)(img[y][x+1] & 0x0FF)+d21*(float)(img[y+1][x] & 0x0FF)+d22*(float)(img[y+1][x+1] & 0x0FF))/dt);
+	    				nImg[h][w] = (byte) ((d11*(img[y][x] & 0x0FF)+d12*(img[y][x+1] & 0x0FF)+d21*(img[y+1][x] & 0x0FF)+d22*(img[y+1][x+1] & 0x0FF))/dt);
 	    			}
 	    		}else{
 		    		if(y>0 && y<height && x>0 && x<width){
