@@ -639,8 +639,8 @@ public class BookReaderMain {
 	    	for(int w = 0; w < width; w++){
 	       		
 	    		//retrieving from copy
-	    		nx = (xc - ((xc-w)*(1.0-cameraHeight/heights[h][w])));
-	    		ny = (yc - ((yc-h)*(1.0-cameraHeight/heights[h][w])));
+	    		nx = (xc - ((xc-w)*cameraHeight/(cameraHeight-heights[h][w])));
+	    		ny = (yc - ((yc-h)*cameraHeight/(cameraHeight-heights[h][w])));
 	    		x = (int) nx;
 	    		y = (int) ny;
 	    		xRem = nx-x;

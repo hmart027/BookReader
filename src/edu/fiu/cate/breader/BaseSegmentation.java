@@ -3,6 +3,17 @@ package edu.fiu.cate.breader;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.FloatBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -79,13 +90,21 @@ public class BaseSegmentation{
 			dist = argos.getDistances();
 			filter.filter(dist);
 		}
-		float[] base = new float[(120*160)];
-		for(int i = 0; i<120; i++){
-			dist = filter.filter(argos.getDistances());
-			base = Vector.add(base, dist);
+		// capture a base image
+		float[] base = readBase(System.getProperty("user.home")+"/lastBase.bin");
+		if(base==null) {
+			base = new float[(120*160)];
+			for(int i = 0; i<120; i++){
+				dist = filter.filter(argos.getDistances());
+				base = Vector.add(base, dist);
+			}
+			base = Vector.scalarMult(base, 1.0f/120.0f);
+	        saveBase(System.getProperty("user.home")+"/lastBase.bin", base);
+		}else {
+			System.out.println("Base loaded from file at: ");
+			System.out.println("\t"+System.getProperty("user.home")+"/lastBase.bin");
 		}
-		base = Vector.scalarMult(base, 1.0f/120.0f);
-        
+		
         BufferedImage finalDisplay = null;
         
         disp.enableCapture(true);
@@ -272,14 +291,21 @@ public class BaseSegmentation{
 	 * data. Once captured, the images are corrected. 
 	 */
 	public void captureEvent(){
+		long t0;
+		t0 = System.currentTimeMillis();
 		byte[][][] img = getHidefImage();
+		System.out.println("HiRez Capture: "+(System.currentTimeMillis()-t0)/1000.0);
+		t0 = System.currentTimeMillis();
 		Rect bound = highRes(BReaderTools.byteArrayToMat(ITools.toGrayscale(img)));
+		System.out.println("First bounding box: "+(System.currentTimeMillis()-t0)/1000.0);
 		
-		Mat imgMat = BReaderTools.byteArrayToMat(img);
-		Imgproc.rectangle(imgMat, bound.tl(), bound.br(), new Scalar(255,255,0), 8);
+//		Mat imgMat = BReaderTools.byteArrayToMat(img);
+//		Imgproc.rectangle(imgMat, bound.tl(), bound.br(), new Scalar(255,255,0), 8);
 				
 		byte[][] low = ITools.normalize(normImgCropped);
+		t0 = System.currentTimeMillis();
 		Rect boundLow = lowResDist(BReaderTools.byteArrayToMat(low));
+		System.out.println("second bounding box: "+(System.currentTimeMillis()-t0)/1000.0);
 		
 		//Show the cropped height map with the bounding box
 //		Mat color = new Mat();
@@ -313,9 +339,11 @@ public class BaseSegmentation{
 
 		//show the high resolution image cropped
 		byte[][][] hiRez = new byte[img.length][][];
+		t0 = System.currentTimeMillis();
 		for(int i = 0 ; i< img.length; i++) {
 				hiRez[i] = ITools.crop(bound.x, bound.y, bound.x+bound.width, bound.y+bound.height,img[i]);
 		}
+		System.out.println("Cropping HiRez: "+(System.currentTimeMillis()-t0)/1000.0);
 		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 		
 		//Show the IR amplitude image cropped
@@ -342,12 +370,48 @@ public class BaseSegmentation{
 		
 		byte[][][] foldCorrected = new byte[hiRez.length][][];
 		System.out.println("Starting fold correction");
-		long t0 = System.currentTimeMillis();
+		t0 = System.currentTimeMillis();
 		for(int i=0; i<hiRez.length; i++) {
 			foldCorrected[i] = BookReaderMain.foldCorrection(hiRez[i], distRez);
 		}
 		System.out.println("Done: "+(System.currentTimeMillis()-t0)/1000.0);
 		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
+	}
+	
+	public static boolean saveBase(String filename, float[]x){
+		try {
+			DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
+			out.writeInt(x.length);
+			for(float i: x) {
+				out.writeFloat(i);
+				out.flush();
+			}
+			out.close();
+			return true;
+		} catch (FileNotFoundException e) {
+//			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	public static float[] readBase(String filename){
+		try {
+			DataInputStream in = new DataInputStream(new FileInputStream(filename));
+			int l = in.readInt();
+			float[] out = new float[l];
+			for(int i=0; i<l; i++) {
+				out[i]=in.readFloat();
+			}
+			in.close();
+			return out;
+		} catch (FileNotFoundException e) {
+//			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	public static float[][] multiply(float[][] m, float a){
@@ -461,21 +525,25 @@ public class BaseSegmentation{
 	}
 	
 	public static void main(String[] args){
-//		new BaseSegmentation();
-		byte[][][] img = ImageManipulation.loadImage("/home/harold/Pictures/brain.jpg");
-		byte[][][] img2 = new byte[img.length][][];
-		long t0 = 0;
-		float dt = 0;
-		for(int i =0 ; i<100; i++){
-			t0 = System.currentTimeMillis();
-			for(int c=0; c<img.length; c++){
-				img2[c]=resize(img[c], 2f);
-			}
-			dt += (System.currentTimeMillis()-t0);
-		}
-		dt/=100.0;
-		System.out.println(dt);
-//		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
+		new BaseSegmentation();
+//		byte[][][] img = ImageManipulation.loadImage(System.getProperty("user.home")+"/Pictures/brain.jpg");
+//		byte[][][] img2 = new byte[img.length][][];
+//		long t0 = System.currentTimeMillis();
+////		float dt = 0;
+////		for(int i =0 ; i<100; i++){
+////			t0 = System.currentTimeMillis();
+////			for(int c=0; c<img.length; c++){
+////				img2[c]=resize(img[c], 2f);
+////			}
+////			dt += (System.currentTimeMillis()-t0);
+////		}
+////		dt/=100.0;
+////		System.out.println(dt);
+////		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
+//		
+//		Mat t = BReaderTools.byteArrayToMat(img);
+//		System.out.println((System.currentTimeMillis()-t0)/1000.0);
+//		new IViewer(BReaderTools.bufferedImageFromMat(t));
 		
 	}
 }

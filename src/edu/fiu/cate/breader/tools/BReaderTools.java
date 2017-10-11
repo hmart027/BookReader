@@ -56,9 +56,16 @@ public class BReaderTools {
 	
 	public static Mat byteArrayToMat(byte[][][] bi) {
 		Mat mat = new Mat(bi[0].length, bi[0][0].length, CvType.CV_8UC3); //The indeces are BRG 
-		for(int y=0; y<bi[0].length; y++)
-			for(int x=0; x<bi[0][0].length; x++)
-				mat.put(y, x, new byte[]{bi[2][y][x], bi[1][y][x], bi[0][y][x]});
+		byte[] data = new byte[bi[0].length * bi[0][0].length * 3];
+		int i = 0;
+		for(int y=0; y<bi[0].length; y++) {
+			for(int x=0; x<bi[0][0].length; x++) {
+				data[i++] = bi[2][y][x]; 
+				data[i++] = bi[1][y][x]; 
+				data[i++] = bi[0][y][x]; 
+			}
+		}
+		mat.put(0, 0, data);
 		return mat;
 	}
 	
