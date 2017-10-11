@@ -291,8 +291,9 @@ public class BaseSegmentation{
 	 * data. Once captured, the images are corrected. 
 	 */
 	public void captureEvent(){
-		long t0;
+		long t0, t1;
 		t0 = System.currentTimeMillis();
+		t1 = t0;
 		byte[][][] img = getHidefImage();
 		System.out.println("HiRez Capture: "+(System.currentTimeMillis()-t0)/1000.0);
 		t0 = System.currentTimeMillis();
@@ -344,7 +345,6 @@ public class BaseSegmentation{
 				hiRez[i] = ITools.crop(bound.x, bound.y, bound.x+bound.width, bound.y+bound.height,img[i]);
 		}
 		System.out.println("Cropping HiRez: "+(System.currentTimeMillis()-t0)/1000.0);
-		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 		
 		//Show the IR amplitude image cropped
 //		byte[][] amp = ITools.normalize(amplitudes);
@@ -369,13 +369,16 @@ public class BaseSegmentation{
 		distRez = multiply(distRez, -100);
 		
 		byte[][][] foldCorrected = new byte[hiRez.length][][];
-		System.out.println("Starting fold correction");
 		t0 = System.currentTimeMillis();
 		for(int i=0; i<hiRez.length; i++) {
 			foldCorrected[i] = BookReaderMain.foldCorrection(hiRez[i], distRez);
 		}
-		System.out.println("Done: "+(System.currentTimeMillis()-t0)/1000.0);
+		System.out.println("Fold Correction: "+(System.currentTimeMillis()-t0)/1000.0);
+		
+		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
+		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
+		System.out.println("Overall time: "+(System.currentTimeMillis()-t1)/1000.0);
 	}
 	
 	public static boolean saveBase(String filename, float[]x){
