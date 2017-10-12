@@ -156,4 +156,54 @@ public class BReaderTools {
 		return out;
 	}
 	
+	public static float[][] getLanczozScaling(float[][] img, float scale){
+		return getLanczozScaling(img, scale, 3);
+	}
+	
+	public static float[][] getLanczozScaling(float[][] img, float scale, int kSize){
+		int[] l = {img.length, img[0].length};
+		int[] nl = {(int) (l[0]*scale), (int) (l[1]*scale)};
+		float[][] out = new float[nl[0]][nl[1]];
+		
+		float c = 1f/scale;
+		float oY, oX;
+		float dY, dX;
+		float Lxy;
+		float s;
+		float pY,pX;
+		
+		for(int y=(int) (kSize*c); y<nl[0]-kSize*c; y++) {
+			oY = y*c;
+			dY = oY-(int)oY;
+			for(int x=(int) (kSize*c); x<nl[1]-kSize*c; x++) {
+				oX = x*c;
+				dX = oX-(int)oX;
+				s = 0;
+				Lxy = 0;
+				for(int aY=1-kSize; aY<=kSize; aY++) {
+					for(int aX=1-kSize; aX<=kSize; aX++) {
+						pY = dY-aY;
+						pX = dX-aX;
+						if(aX==0 && aY==0) {
+							Lxy = 1;
+						}else if(aX==0){
+							Lxy = (float) ((float)kSize*Math.sin(Math.PI*pY)*Math.sin(Math.PI*pY/(float)kSize)/(Math.PI*Math.PI*pY*pY));
+						}else if(aY==0){
+							Lxy = (float) ((float)kSize*Math.sin(Math.PI*pX)*Math.sin(Math.PI*pX/(float)kSize)/(Math.PI*Math.PI*pX*pX));
+						}else {
+							Lxy = (float) ((float)(kSize*kSize)*Math.sin(Math.PI*pY)*Math.sin(Math.PI*pX)*Math.sin(Math.PI*pY/(float)kSize)*Math.sin(Math.PI*pX/(float)kSize)/
+									(Math.PI*Math.PI*Math.PI*Math.PI*pX*pX*pY*pY));
+						}
+						if((int) (oY+aY)>=0 && (int) (oY+aY)<l[0] && (int) (oX+aX)>=0 && (int) (oX+aX)< l[1])
+							s+=img[(int) (oY+aY)][(int) (oX+aX)]*Lxy;
+					}
+				}
+				out[y][x]=s;
+				
+			}
+		}
+		
+		return out;
+	}
+	
 }
