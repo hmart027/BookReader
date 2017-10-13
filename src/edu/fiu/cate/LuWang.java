@@ -331,4 +331,63 @@ public class LuWang {
 		}
 		return nImg;
 	}
+	
+	public static byte[][] extentionWithLinearInterpolation(byte[][] img, float[][] heights){
+		double[][] radii = new double[heights.length][heights[0].length];
+		double newWidth = 1, dW = 0;
+//		double dX = f/(Hh-f); 
+		for(int y = 0; y<radii.length; y++){
+			dW = 1;
+			for(int x = 1; x<radii[0].length; x++){
+				radii[y][x] = (double) (Math.pow(1 + Math.sqrt(heights[y][x]-heights[y][x-1])/(100f)*ppm, 2));
+				dW += radii[y][x];
+			}
+			if(dW>newWidth) newWidth = dW;
+		}
+		int height 	= img.length;
+		int width 	= img[0].length;
+		byte[][] nImg = new byte[height][(int)newWidth];
+		float nX = 0;
+		float cRad = 0;
+		int x 	= 0;
+		int y 	= 0;
+		float xRem 	= 0;
+		float yRem  = 0;
+		float d11  	= 0;
+		float d12 	= 0;
+		float d21 	= 0;
+		float d22 	= 0;
+		float dt 	= 0;
+		for(int h = 0; h < height; h++){
+			x = 0;
+			cRad = (float) radii[h][x];
+			nX = cRad;
+			y = h;
+	    	for(int w = 0; w < (int)newWidth; w++){
+    			if(x>=width) continue;
+	    		xRem = (int)nX-w;
+	    		if(xRem != 0.00 || yRem != 0.00 ){
+	    			d11 = (float) (1f/Math.sqrt(Math.pow(xRem, 2)+Math.pow(yRem, 2)));
+	    			d12 = (float) (1f/Math.sqrt(Math.pow(1-xRem, 2)+Math.pow(yRem, 2)));
+	    			d21 = (float) (1f/Math.sqrt(Math.pow(xRem, 2)+Math.pow(1-yRem, 2)));
+	    			d22 = (float) (1f/Math.sqrt(Math.pow(1-xRem, 2)+Math.pow(1-yRem, 2)));
+	    			dt = d11 + d12 + d21 + d22;
+	    			if(y>0 && y+1<height && x>0 && x+1<width){
+	    				nImg[h][w] = (byte) ((d11*(float)(img[y][x] & 0x0FF)+d12*(float)(img[y][x+1] & 0x0FF)+d21*(float)(img[y+1][x] & 0x0FF)+d22*(float)(img[y+1][x+1] & 0x0FF))/dt);
+	    			}
+	    		}else{
+		    		if(y>0 && y<height && x>0 && x<width){
+		    			nImg[h][w] = img[y][x];
+		    		}
+	    		}
+	    		if(w > nX){
+	    			x++;
+	    			if(x>=width) continue;
+	    			cRad = (float) radii[y][x];
+	    			nX += cRad;
+	    		}
+	    	}
+		}
+		return nImg;
+	}
 }

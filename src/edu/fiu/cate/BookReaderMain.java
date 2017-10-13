@@ -619,52 +619,6 @@ public class BookReaderMain {
 		return nImg;
 	}
 	
-	public static byte[][] foldCorrection(byte[][] img, float[][] heights){
-	    
-	    int height = img.length;
-	    int width = img[0].length;
-	    
-	    int xc = width/2;
-	    int yc = height/2;
-	    
-	    byte[][] nImg = new byte[height][width];
-	    int x = 0;
-	    double nx = 0, xRem = 0;
-	    int y = 0;
-	    double ny = 0, yRem = 0;
-	    
-	    double d11, d12, d21, d22, dt;
-	    
-	    for(int h = 0; h < height; h++){
-	    	for(int w = 0; w < width; w++){
-	       		
-	    		//retrieving from copy
-	    		nx = (xc - ((xc-w)*cameraHeight/(cameraHeight-heights[h][w])));
-	    		ny = (yc - ((yc-h)*cameraHeight/(cameraHeight-heights[h][w])));
-	    		x = (int) nx;
-	    		y = (int) ny;
-	    		xRem = nx-x;
-	    		yRem = ny-y;
-	    		
-	    		if(xRem != 0.00 || yRem != 0.00 ){
-	    			if(y>0 && y+1<height && x>0 && x+1<width){
-		    			d11 = (1f/Math.sqrt(xRem*xRem+yRem*yRem));
-		    			d12 = (1f/Math.sqrt((1-xRem)*(1-xRem)+yRem*yRem));
-		    			d21 = (1f/Math.sqrt(xRem*xRem+(1-yRem)*(1-yRem)));
-		    			d22 = (1f/Math.sqrt((1-xRem)*(1-xRem)+(1-yRem)*(1-yRem)));
-		    			dt = d11 + d12 + d21 + d22;
-	    				nImg[h][w] = (byte) ((d11*(img[y][x] & 0x0FF)+d12*(img[y][x+1] & 0x0FF)+d21*(img[y+1][x] & 0x0FF)+d22*(img[y+1][x+1] & 0x0FF))/dt);
-	    			}
-	    		}else{
-		    		if(y>0 && y<height && x>0 && x<width){
-		    			nImg[h][w] = img[y][x];
-		    		}
-	    		}
-	    	}
-	    }
-		return nImg;
-	}
-
 	public static byte[][][] foldAndBarrelCorrection(byte[][][] img, float[][] heights){
 	    
 	    int height = img.length;

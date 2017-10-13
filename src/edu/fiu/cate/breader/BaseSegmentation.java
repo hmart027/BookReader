@@ -35,6 +35,7 @@ import org.opencv.video.Video;
 import com.bluetechnix.argos.Argos3D;
 
 import edu.fiu.cate.BookReaderMain;
+import edu.fiu.cate.LuWang;
 import edu.fiu.cate.breader.tools.BReaderTools;
 import edu.fiu.cate.breader.tools.RollingImageFilter;
 import image.tools.ITools;
@@ -207,7 +208,8 @@ public class BaseSegmentation{
 			int pIndex = (int) tHull.get(i, 0)[0];
 			points[i] = new Point(cont.get(pIndex, 0)); 
 		}
-		return Imgproc.boundingRect(new MatOfPoint(points));
+		Rect out = Imgproc.boundingRect(new MatOfPoint(points));
+		return out;
 	}
 	
 	public int[] polySearch(Point point, Mat hierarchy, List<MatOfPoint> contours, int current){
@@ -283,7 +285,8 @@ public class BaseSegmentation{
 			int pIndex = (int) tHull.get(i, 0)[0];
 			tHullPoints[i] = points.get(pIndex); 
 		}
-		return Imgproc.boundingRect(new MatOfPoint(tHullPoints));
+		Rect out = Imgproc.boundingRect(new MatOfPoint(tHullPoints));
+		return out;
 	}
 	
 	/**
@@ -363,7 +366,11 @@ public class BaseSegmentation{
 //		new IViewer(BReaderTools.bufferedImageFromMat(imgMat));
 		
 		//Crop the distance image and prepare for correction
-		float[][] distRez = resize(normImg, (float)s);
+		float[][] distRez;
+		distRez = resize(normImg, (float)s);
+//		distRez = BReaderTools.getLanczozScaling(normImg, (float)s);
+		int xCentOff = (img[0][0].length - bound.width)/2 - bound.x;
+		int yCentOff = (img[0].length - bound.height)/2 - bound.y;
 		int x0 = (int) ((boundLow.x+xO+40)*s), y0 = (int) ((boundLow.y+yO+25)*s);
 		distRez = ITools.crop(x0, y0, x0+bound.width, y0+bound.height, distRez);
 		distRez = multiply(distRez, -100);
@@ -371,13 +378,26 @@ public class BaseSegmentation{
 		byte[][][] foldCorrected = new byte[hiRez.length][][];
 		t0 = System.currentTimeMillis();
 		for(int i=0; i<hiRez.length; i++) {
-			foldCorrected[i] = BookReaderMain.foldCorrection(hiRez[i], distRez);
+			foldCorrected[i] = BReaderTools.foldCorrection(hiRez[i], distRez, xCentOff, yCentOff);
 		}
 		System.out.println("Fold Correction: "+(System.currentTimeMillis()-t0)/1000.0);
+		
+		float[][] distRezPushed = BReaderTools.foldCorrection(distRez, 
+				(distRez[0].length - boundLow.width)/2 - boundLow.x, 
+				(distRez.length - boundLow.height)/2 - boundLow.y);
+		
+		byte[][][] extensionCorrected = new byte[hiRez.length][][];
+		t0 = System.currentTimeMillis();
+		for(int i=0; i<hiRez.length; i++) {
+			extensionCorrected[i] = LuWang.extentionWithLinearInterpolation(foldCorrected[i], distRezPushed);
+		}
+		System.out.println("Extension Correction: "+(System.currentTimeMillis()-t0)/1000.0);
 		
 		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
 		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
+		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
+		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
 		System.out.println("Overall time: "+(System.currentTimeMillis()-t1)/1000.0);
 	}
 	
@@ -528,10 +548,11 @@ public class BaseSegmentation{
 	}
 	
 	public static void main(String[] args){
-//		new BaseSegmentation();
-		byte[][][] img = ImageManipulation.loadImage(System.getProperty("user.home")+"/Pictures/brain.jpg");
-		byte[][][] img2 = new byte[img.length][][];
-		long t0 = System.currentTimeMillis();
+		new BaseSegmentation();
+//		byte[][][] img = ImageManipulation.loadImage(System.getProperty("user.home")+"/Pictures/brain.jpg");
+//		byte[][][] img2 = new byte[img.length][][];
+//		long t0 = System.currentTimeMillis();
+		
 //		float dt = 0;
 //		for(int i =0 ; i<100; i++){
 //			t0 = System.currentTimeMillis();
@@ -544,12 +565,12 @@ public class BaseSegmentation{
 //		System.out.println(dt);
 //		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
 
-		new IViewer(ImageManipulation.getGrayBufferedImage(img[0]));
-		
-		float[][][] imgF = ITools.byte2Float(img);
-		float[][] imgF2 = BReaderTools.getLanczozScaling(imgF[0], 2, 3);
-		System.out.println((System.currentTimeMillis()-t0)/1000.0);
-		new IViewer(ImageManipulation.getGrayBufferedImage(ITools.normalize(imgF2)));
+//		new IViewer(ImageManipulation.getGrayBufferedImage(img[0]));
+//		
+//		float[][][] imgF = ITools.byte2Float(img);
+//		float[][] imgF2 = BReaderTools.getLanczozScaling(imgF[0], 2, 3);
+//		System.out.println((System.currentTimeMillis()-t0)/1000.0);
+//		new IViewer(ImageManipulation.getGrayBufferedImage(ITools.normalize(imgF2)));
 		
 	}
 }
