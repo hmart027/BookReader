@@ -14,8 +14,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.FloatBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+
+import javax.swing.text.DateFormatter;
 
 import org.gphoto2.Camera;
 import org.gphoto2.CameraFile;
@@ -36,8 +41,10 @@ import com.bluetechnix.argos.Argos3D;
 
 import edu.fiu.cate.BookReaderMain;
 import edu.fiu.cate.LuWang;
+import edu.fiu.cate.breader.abbyy.ABBYY;
 import edu.fiu.cate.breader.tools.BReaderTools;
 import edu.fiu.cate.breader.tools.RollingImageFilter;
+import freetts.TTS;
 import image.tools.ITools;
 import image.tools.IViewer;
 import img.ImageManipulation;
@@ -50,10 +57,17 @@ public class BaseSegmentation{
 		// Load OpenCV library
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME); 	
 	}
+
+	private static String saveDir = System.getProperty("user.home") + "/BookReaderDB";
 	
 	private float[][] rawrawDist, rawDist, normImg, amplitudes, normImgCropped;
 	
+	private ABBYY abbyy = null;
+	private TTS tts = new TTS();
+
 	public BaseSegmentation(){
+		
+		abbyy = ABBYY.getABBYY();
 			
 		String imgType = "test"; //ampdata
 		String pathToImg = "/mnt/Research/Harold/BookReader/Images/J2 test images/SHM/";
@@ -92,7 +106,7 @@ public class BaseSegmentation{
 			filter.filter(dist);
 		}
 		// capture a base image
-		float[] base = readBase(System.getProperty("user.home")+"/lastBase.bin");
+		float[] base = readBase(saveDir+"/lastBase.bin");
 		if(base==null) {
 			base = new float[(120*160)];
 			for(int i = 0; i<120; i++){
@@ -100,10 +114,10 @@ public class BaseSegmentation{
 				base = Vector.add(base, dist);
 			}
 			base = Vector.scalarMult(base, 1.0f/120.0f);
-	        saveBase(System.getProperty("user.home")+"/lastBase.bin", base);
+	        saveBase(saveDir+"/lastBase.bin", base);
 		}else {
 			System.out.println("Base loaded from file at: ");
-			System.out.println("\t"+System.getProperty("user.home")+"/lastBase.bin");
+			System.out.println("\t"+saveDir+"/lastBase.bin");
 		}
 		
         BufferedImage finalDisplay = null;
@@ -367,8 +381,8 @@ public class BaseSegmentation{
 		
 		//Crop the distance image and prepare for correction
 		float[][] distRez;
-		distRez = resize(normImg, (float)s);
-//		distRez = BReaderTools.getLanczozScaling(normImg, (float)s);
+//		distRez = resize(normImg, (float)s); // Biliniar
+		distRez = BReaderTools.getLanczozScaling(normImg, (float)s); // Sinc
 		int xCentOff = (img[0][0].length - bound.width)/2 - bound.x;
 		int yCentOff = (img[0].length - bound.height)/2 - bound.y;
 		int x0 = (int) ((boundLow.x+xO+40)*s), y0 = (int) ((boundLow.y+yO+25)*s);
@@ -393,12 +407,70 @@ public class BaseSegmentation{
 		}
 		System.out.println("Extension Correction: "+(System.currentTimeMillis()-t0)/1000.0);
 		
-		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
-		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
-		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
-		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
-		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
+//		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
+//		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
+//		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
+//		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
+//		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
 		System.out.println("Overall time: "+(System.currentTimeMillis()-t1)/1000.0);
+		
+		SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd-hh-mm-ss");
+		String time = format.format(new Date(System.currentTimeMillis()));
+		
+		// Save Corrected High Rez.
+		String imgPath = saveDir+"/highResolutionCroppedCorrected-"+time+".tiff";
+		ImageManipulation.writeImage(foldCorrected, imgPath);
+		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
+		
+		saveData(time, img, hiRez, distRez, boundLow, bound);
+		
+		System.out.println("Done!!!!");
+		
+		tts.doTTS(text);
+		
+	}
+	
+	public void saveData(String time, byte[][][] img, byte[][][] hiRez, float[][] distRez, Rect lr, Rect hr ) {
+		// Save High Resolution Image
+		ImageManipulation.writeImage(img, saveDir+"/highResolution-"+time+".tiff");
+		// Save ToF Amplitude Image
+		ImageManipulation.writeImage(ITools.normalize(amplitudes), saveDir+"/amplitude-"+time+".tiff");
+		// Save ToF height map
+		BReaderTools.saveFloatArrayToFile(saveDir+"/height-"+time+".bin", normImg);
+		// Save Cropped High Rez
+		ImageManipulation.writeImage(hiRez, saveDir+"/highResolutionCropped-"+time+".tiff");
+		// Save Cropped Height Map
+		BReaderTools.saveFloatArrayToFile(saveDir+"/heightCropped-"+time+".bin", distRez);
+		
+		try {
+			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(saveDir+"/data"+time+".txt")));
+			out.write("#Raw Image Information#\n");
+			out.write("LC:0\n");
+			out.write("LW:"+amplitudes.length+"\n");
+			out.write("LH:"+amplitudes[0].length+"\n");
+			out.write("LName:"+"amplitude-"+time+".tiff"+"\n");
+			out.write("HC:"+img.length+"\n");
+			out.write("HW:"+img[0].length+"\n");
+			out.write("HH:"+img[0][0].length+"\n");
+			out.write("HName:"+"highResolution-"+time+".tiff"+"\n");
+			out.write("#Cropping Information#\n");
+			out.write("LCx:"+lr.x+"\n");
+			out.write("LCy:"+lr.y+"\n");
+			out.write("LCw:"+lr.width+"\n");
+			out.write("LCh:"+lr.height+"\n");
+			out.write("HCx:"+hr.x+"\n");
+			out.write("HCy:"+hr.y+"\n");
+			out.write("HCw:"+hr.width+"\n");
+			out.write("HCh:"+hr.height+"\n");
+			out.flush();
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	public static boolean saveBase(String filename, float[]x){
