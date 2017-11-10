@@ -1,5 +1,12 @@
 package edu.fiu.cate;
 
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.imgproc.Imgproc;
+
+import edu.fiu.cate.breader.tools.BReaderTools;
+
 public class LuWang {
 	
 	public static double[] P = new double[]{0.016, -0.042, 0, 1.026};
@@ -332,62 +339,57 @@ public class LuWang {
 		return nImg;
 	}
 	
+	//Heights are being passed in cm
 	public static byte[][] extentionWithLinearInterpolation(byte[][] img, float[][] heights){
 		double[][] radii = new double[heights.length][heights[0].length];
 		double newWidth = 1, dW = 0;
-//		double dX = f/(Hh-f); 
 		for(int y = 0; y<radii.length; y++){
-			dW = 1;
+			dW = 0;
 			for(int x = 1; x<radii[0].length; x++){
-				radii[y][x] = (double) (Math.pow(1 + Math.sqrt(heights[y][x]-heights[y][x-1])/(100f)*ppm, 2));
-				dW += radii[y][x];
+				radii[y][x] = (double) Math.sqrt(1+((heights[y][x]-heights[y][x-1])*ppm/100f)*((heights[y][x]-heights[y][x-1])*ppm/100f)) + radii[y][x-1];
 			}
+			dW = radii[y][radii[0].length-1];
 			if(dW>newWidth) newWidth = dW;
 		}
 		int height 	= img.length;
 		int width 	= img[0].length;
-		byte[][] nImg = new byte[height][(int)newWidth];
-		float nX = 0;
-		float cRad = 0;
-		int x 	= 0;
-		int y 	= 0;
-		float xRem 	= 0;
-		float yRem  = 0;
-		float d11  	= 0;
-		float d12 	= 0;
-		float d21 	= 0;
-		float d22 	= 0;
-		float dt 	= 0;
+//		byte[][] nImg = new byte[height][(int) newWidth];
+//		for(int h = 0; h < height; h++){
+//			double x0=0,x1=0;
+//			int xi0=0, xi1=0;
+//			double dx=0;
+//	    	for(int w = 0; w < width-1; w++){
+//	    		x0 = radii[h][w];
+//	    		x1 = radii[h][w+1];
+//	    		xi0 = (int)x0;
+//	    		xi1 = (int)x1;
+//	    		double c = 1d/(x1-x0);
+//	    		for(int i=xi0; i<xi1; i++) {
+//	    			dx=(i-xi0)*c;
+//		    		nImg[h][i]=(byte) (img[h][w]*dx+img[h][w+1]*(1d-dx));
+//	    		}
+//	    	}
+//		}
+//		return nImg;
+		Mat map = new Mat(height, (int) newWidth, CvType.CV_32FC2);
 		for(int h = 0; h < height; h++){
-			x = 0;
-			cRad = (float) radii[h][x];
-			nX = cRad;
-			y = h;
-	    	for(int w = 0; w < (int)newWidth; w++){
-    			if(x>=width) continue;
-	    		xRem = (int)nX-w;
-	    		if(xRem != 0.00 || yRem != 0.00 ){
-	    			d11 = (float) (1f/Math.sqrt(Math.pow(xRem, 2)+Math.pow(yRem, 2)));
-	    			d12 = (float) (1f/Math.sqrt(Math.pow(1-xRem, 2)+Math.pow(yRem, 2)));
-	    			d21 = (float) (1f/Math.sqrt(Math.pow(xRem, 2)+Math.pow(1-yRem, 2)));
-	    			d22 = (float) (1f/Math.sqrt(Math.pow(1-xRem, 2)+Math.pow(1-yRem, 2)));
-	    			dt = d11 + d12 + d21 + d22;
-	    			if(y>0 && y+1<height && x>0 && x+1<width){
-	    				nImg[h][w] = (byte) ((d11*(float)(img[y][x] & 0x0FF)+d12*(float)(img[y][x+1] & 0x0FF)+d21*(float)(img[y+1][x] & 0x0FF)+d22*(float)(img[y+1][x+1] & 0x0FF))/dt);
-	    			}
-	    		}else{
-		    		if(y>0 && y<height && x>0 && x<width){
-		    			nImg[h][w] = img[y][x];
-		    		}
-	    		}
-	    		if(w > nX){
-	    			x++;
-	    			if(x>=width) continue;
-	    			cRad = (float) radii[y][x];
-	    			nX += cRad;
+			double x0=0,x1=0;
+			int xi0=0, xi1=0;
+			double dx=0;
+	    	for(int w = 0; w < width-1; w++){
+	    		x0 = radii[h][w];
+	    		x1 = radii[h][w+1];
+	    		xi0 = (int)x0;
+	    		xi1 = (int)x1;
+	    		double c = 1d/(x1-x0);
+	    		for(int i=xi0; i<xi1; i++) {
+	    			dx=(i-xi0)*c;
+		    		map.put(h, i, w+dx, h);
 	    		}
 	    	}
 		}
-		return nImg;
+		Mat dst = new Mat();
+		Imgproc.remap(BReaderTools.byteArrayToMat(img), dst, map, new Mat(), Imgproc.INTER_LANCZOS4);
+		return BReaderTools.matToByteArray(dst);
 	}
 }

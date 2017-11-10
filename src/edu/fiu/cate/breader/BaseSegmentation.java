@@ -381,8 +381,12 @@ public class BaseSegmentation{
 		
 		//Crop the distance image and prepare for correction
 		float[][] distRez;
-//		distRez = resize(normImg, (float)s); // Biliniar
-		distRez = BReaderTools.getLanczozScaling(normImg, (float)s); // Sinc
+		Mat destRezM = new Mat();
+		Imgproc.resize(BReaderTools.floatArrayToMat(normImg),
+				destRezM, new Size(0, 0),
+				s,s,
+				Imgproc.INTER_LANCZOS4);//resize image
+		distRez = BReaderTools.matToFloatArray(destRezM);
 		int xCentOff = (img[0][0].length - bound.width)/2 - bound.x;
 		int yCentOff = (img[0].length - bound.height)/2 - bound.y;
 		int x0 = (int) ((boundLow.x+xO+40)*s), y0 = (int) ((boundLow.y+yO+25)*s);
@@ -403,7 +407,7 @@ public class BaseSegmentation{
 		byte[][][] extensionCorrected = new byte[hiRez.length][][];
 		t0 = System.currentTimeMillis();
 		for(int i=0; i<hiRez.length; i++) {
-			extensionCorrected[i] = LuWang.extentionWithLinearInterpolation(foldCorrected[i], distRezPushed);
+			extensionCorrected[i] = LuWang.extentionWithLinearInterpolation(foldCorrected[i], distRez);
 		}
 		System.out.println("Extension Correction: "+(System.currentTimeMillis()-t0)/1000.0);
 		
@@ -411,7 +415,8 @@ public class BaseSegmentation{
 //		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 //		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
 //		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
-//		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
+		new IViewer("Flat",ImageManipulation.getBufferedImage(foldCorrected));
+		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
 		System.out.println("Overall time: "+(System.currentTimeMillis()-t1)/1000.0);
 		
 		SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd-hh-mm-ss");
@@ -420,13 +425,13 @@ public class BaseSegmentation{
 		// Save Corrected High Rez.
 		String imgPath = saveDir+"/highResolutionCroppedCorrected-"+time+".tiff";
 		ImageManipulation.writeImage(foldCorrected, imgPath);
-		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
+//		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
 		
 		saveData(time, img, hiRez, distRez, boundLow, bound);
 		
 		System.out.println("Done!!!!");
 		
-		tts.doTTS(text);
+//		tts.doTTS(text);
 		
 	}
 	
@@ -621,28 +626,37 @@ public class BaseSegmentation{
 	
 	public static void main(String[] args){
 		new BaseSegmentation();
-//		byte[][][] img = ImageManipulation.loadImage(System.getProperty("user.home")+"/Pictures/brain.jpg");
+//		byte[][][] img = ImageManipulation.loadImage(System.getProperty("user.home")+"/Pictures/i1.png");
 //		byte[][][] img2 = new byte[img.length][][];
 //		long t0 = System.currentTimeMillis();
-		
-//		float dt = 0;
-//		for(int i =0 ; i<100; i++){
-//			t0 = System.currentTimeMillis();
-//			for(int c=0; c<img.length; c++){
-//				img2[c]=resize(img[c], 2f);
-//			}
-//			dt += (System.currentTimeMillis()-t0);
-//		}
-//		dt/=100.0;
-//		System.out.println(dt);
-//		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
-
-//		new IViewer(ImageManipulation.getGrayBufferedImage(img[0]));
 //		
-//		float[][][] imgF = ITools.byte2Float(img);
-//		float[][] imgF2 = BReaderTools.getLanczozScaling(imgF[0], 2, 3);
-//		System.out.println((System.currentTimeMillis()-t0)/1000.0);
-//		new IViewer(ImageManipulation.getGrayBufferedImage(ITools.normalize(imgF2)));
+////		float dt = 0;
+////		for(int i =0 ; i<100; i++){
+////			t0 = System.currentTimeMillis();
+////			for(int c=0; c<img.length; c++){
+////				img2[c]=resize(img[c], 2f);
+////			}
+////			dt += (System.currentTimeMillis()-t0);
+////		}
+////		dt/=100.0;
+////		System.out.println(dt);
+////		new IViewer("img1", ImageManipulation.getBufferedImage(img2));
+//		
+//
+//		Mat destRezM = new Mat();
+//		Imgproc.resize(BReaderTools.byteArrayToMat(img),
+//				destRezM, new Size(0, 0),
+//				10,10,
+//				Imgproc.INTER_CUBIC);//resize image
+//		new IViewer("OpenCV-INTER_CUBIC",BReaderTools.bufferedImageFromMat(destRezM));
+//		
+////		new IViewer(ImageManipulation.getGrayBufferedImage(img[0]));
+//		
+////		float[][][] imgF = ITools.byte2Float(img);
+////		float[][] imgF2 = BReaderTools.getBicubicScaling(imgF[0], 5);
+////		System.out.println((System.currentTimeMillis()-t0)/1000.0);
+////		new IViewer(ImageManipulation.getGrayBufferedImage(ITools.normalize(imgF2)));
+////		ImageManipulation.writeImage(ITools.normalize(imgF2), System.getProperty("user.home")+"/Pictures/brain2.jpg");
 		
 	}
 }

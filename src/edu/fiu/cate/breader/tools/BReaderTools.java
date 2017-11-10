@@ -8,6 +8,8 @@ import java.io.IOException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
+import math2.Matrix;
+
 public class BReaderTools {
 	
 	public static void saveFloatArrayToFile(String file, float[] array){
@@ -52,6 +54,27 @@ public class BReaderTools {
 		for(int i=0; i<bi.length; i++)
 			mat.put(i, 0, bi[i]);
 		return mat;
+	}
+	
+	public static Mat floatArrayToMat(float[][] bi) {
+		Mat mat = new Mat(bi.length, bi[0].length, CvType.CV_32FC1);
+		for(int i=0; i<bi.length; i++)
+			mat.put(i, 0, bi[i]);
+		return mat;
+	}
+	
+	public static float[][] matToFloatArray(Mat mat) {
+		float[][] out = new float[mat.rows()][mat.cols()];
+		for(int i=0; i<mat.rows(); i++)
+			mat.get(i, 0, out[i]);
+		return out;
+	}
+	
+	public static byte[][] matToByteArray(Mat mat) {
+		byte[][] out = new byte[mat.rows()][mat.cols()];
+		for(int i=0; i<mat.rows(); i++)
+			mat.get(i, 0, out[i]);
+		return out;
 	}
 	
 	public static Mat byteArrayToMat(byte[][][] bi) {
@@ -317,13 +340,88 @@ public class BReaderTools {
 		return out;
 	}
 	
+	//Not Working right
 	public static float[][] getBicubicScaling(float[][] img, float scale){
 		int[] l = {img.length, img[0].length};
 		int[] nl = {(int) (l[0]*scale), (int) (l[1]*scale)};
 		float[][] out = new float[nl[0]][nl[1]];
 		
-		float c = 1f/scale;
+		double[][] A1= {
+				{ 1, 0, 0, 0},
+				{ 0, 0, 1, 0},
+				{-3, 3,-2,-1},
+				{ 2,-2, 1, 1},				
+		};
+		double[][] A2= {
+				{ 1, 0,-3, 2},
+				{ 0, 0, 3,-2},
+				{ 0, 1,-2, 1},
+				{ 0, 0,-1, 1},				
+		};	
+		double[][] a, f= new double[4][4];
 		
+		float c = 1f/scale;
+		float x, y;
+		int xi, yi;
+		float dx, dy;
+		float x1,x2,x3,y1,y2,y3;
+		for(int j=0; j<nl[0]; j++) {
+			y=j*c;
+			yi=(int) y;
+			dy=y-yi;
+			y1=dy;
+			y2=y1*y1;
+			y3=y2*y1;
+			
+			//Fix this. An approximation is required for boundary pixels
+			if(yi<1||yi>=l[0]-2)continue;
+			
+			for(int i=0; i<nl[1]; i++) {
+				x=i*c;
+				xi=(int) x;
+				dx=x-xi;
+				x1=dx;
+				x2=x1*x1;
+				x3=x2*x1;
+				
+				//Fix this. An approximation is required for boundary pixels
+				if(xi<1||xi>=l[1]-2)continue;
+				
+				f[0][0]=img[yi][xi];
+				f[0][1]=img[yi][xi+1];
+				f[0][2]=(img[yi+1][xi]-img[yi-1][xi])/2f;
+				f[0][2]=(img[yi+1][xi+1]-img[yi-1][xi+1])/2f;
+				
+				f[1][0]=img[yi+1][xi];
+				f[1][1]=img[yi+1][xi+1];
+				f[1][2]=(img[yi+2][xi]-img[yi][xi])/2f;
+				f[1][2]=(img[yi+2][xi+1]-img[yi][xi+1])/2f;
+				
+				f[2][0]=(img[yi][xi+1]-img[yi][xi-1])/2f;
+				f[2][1]=(img[yi][xi+2]-img[yi][xi])/2f;
+				f[2][2]=(img[yi+1][xi+1]-img[yi+1][xi-1]-
+						img[yi-1][xi+1]+img[yi-1][xi-1])/4f;
+				f[2][2]=(img[yi+1][xi+2]-img[yi+1][xi]-
+						img[yi-1][xi+2]+img[yi-1][xi])/4f;
+
+				f[3][0]=(img[yi+1][xi+1]-img[yi+1][xi-1])/2f;
+				f[3][1]=(img[yi+1][xi+2]-img[yi+1][xi])/2f;
+				f[3][2]=(img[yi+2][xi+1]-img[yi+2][xi-1]-
+						img[yi][xi+1]+img[yi][xi-1])/4f;
+				f[3][2]=(img[yi+2][xi+2]-img[yi+2][xi]-
+						img[yi][xi+2]+img[yi][xi])/4f;
+				
+				a = Matrix.multiply(Matrix.multiply(A1, f), A2);
+				
+				out[j][i] = (float) (
+						(a[0][0]+a[1][0]*x1+a[2][0]*x2+a[3][0]*x3)
+						+(a[0][1]+a[1][1]*x1+a[2][1]*x2+a[3][1]*x3)*y1
+						+(a[0][2]+a[1][2]*x1+a[2][2]*x2+a[3][2]*x3)*y2
+						+(a[0][3]+a[1][3]*x1+a[2][3]*x2+a[3][3]*x3)*y3
+						);
+				
+			}
+		}
 		
 		return out;
 	}
