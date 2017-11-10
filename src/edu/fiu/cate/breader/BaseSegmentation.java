@@ -425,13 +425,13 @@ public class BaseSegmentation{
 		// Save Corrected High Rez.
 		String imgPath = saveDir+"/highResolutionCroppedCorrected-"+time+".tiff";
 		ImageManipulation.writeImage(foldCorrected, imgPath);
-//		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
+		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
 		
 		saveData(time, img, hiRez, distRez, boundLow, bound);
 		
 		System.out.println("Done!!!!");
 		
-//		tts.doTTS(text);
+		tts.doTTS(text);
 		
 	}
 	
