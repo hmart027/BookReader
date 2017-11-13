@@ -200,7 +200,7 @@ public class CaptureSettings extends JFrame {
 		);
 		panel.setLayout(gl_panel);
 		
-		btnCapture = new JButton("Capture\r\nNow");
+		btnCapture = new JButton("Capture");
 		btnCapture.setEnabled(false);
 		GroupLayout gl_panel_4 = new GroupLayout(panel_4);
 		gl_panel_4.setHorizontalGroup(
