@@ -5,198 +5,238 @@ import image.tools.ImagePanel;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.text.NumberFormat;
 
-import javax.swing.JFormattedTextField;
-import javax.swing.JSlider;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.JLabel;
-import javax.swing.JCheckBox;
-import javax.swing.JTextField;
 import javax.swing.JButton;
+import javax.swing.JRadioButton;
+import javax.swing.border.BevelBorder;
+import java.awt.Font;
 
 public class CaptureSettings extends JFrame {
 
 	private static final long serialVersionUID = 8677323488418863084L;
 	private JPanel contentPane;
 	private ImagePanel captureDisplay;
-	private JSlider slider;
-	private JFormattedTextField textField;
-	private JCheckBox checkBox;
-	private JFormattedTextField minValueField;
-	private JFormattedTextField maxValueField;
-	private JFormattedTextField actualMax;
 	private JButton btnCapture;
 	
-	float normVal=6000;
-	float maxNorm = 65535;
-	float minNorm = 0;
+	//Interpolation Methods
+	private int interpolationMethod = 3;
+	private JRadioButton rdbtnLinear;
+	private JRadioButton rdbtnCubic;
+	private JRadioButton rdbtnLazano;
 	
-
+	//Correction
+	private int correctionMethod = 3;
+	private JRadioButton rdbtnNone;
+	private JRadioButton rdbtnFlattening;
+	private JRadioButton rdbtnFlatExt;
+	
 	/**
 	 * Create the frame.
 	 */
 	public CaptureSettings() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 544, 424);
+		setBounds(100, 100, 450, 456);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		setContentPane(contentPane);	
-
-		JLabel lblNormalization = new JLabel("Normalization");
+		setContentPane(contentPane);
 		captureDisplay = new ImagePanel(new Dimension(50, 50));
-		captureDisplay.setBackground(Color.DARK_GRAY);	
-		slider = new JSlider();
-		slider.setMaximum(1000);
-		slider.setValue((int)(normVal/maxNorm*1000));
+		captureDisplay.setBackground(Color.DARK_GRAY);
 		NumberFormat nformat = NumberFormat.getNumberInstance();
 		nformat.setMinimumFractionDigits(1);
-		textField = new JFormattedTextField(nformat);
-		textField.setColumns(10);
-		checkBox = new JCheckBox("");
 		
-		textField.setValue(normVal);
-		slider.addChangeListener(new ChangeListener() {		
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				float v = ((JSlider)e.getSource()).getValue();
-				normVal = (maxNorm-minNorm)*v/1000.0f;
-				if(textField!=null){
-					textField.setText(normVal+"");
-				}
-			}
-		});
-
-		textField.addPropertyChangeListener("value", new PropertyChangeListener() {
-			
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				float v = ((Number)textField.getValue()).floatValue();
-				if(v<minNorm) v=minNorm;
-				if(v>maxNorm) v=maxNorm;
-				normVal = v;
-				int s = (int) ((normVal-minNorm)/(maxNorm-minNorm)*1000.0f);
-				slider.setValue(s);
-			}
-		});
-		
-		minValueField = new JFormattedTextField(nformat);
-		minValueField.setColumns(10);
-		minValueField.setValue(minNorm);
-		minValueField.addPropertyChangeListener("value", new PropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				float v = ((Number)minValueField.getValue()).floatValue();
-				if(v>maxNorm) v=maxNorm;
-				int s = slider.getValue();
-				minNorm = v;
-				normVal = (maxNorm-minNorm)*s/1000.0f-minNorm;
-				if(textField!=null){
-					textField.setText(normVal+"");
-				}
-				System.out.println("Min: "+minNorm);
-			}
-		});
-		
-		maxValueField = new JFormattedTextField(nformat);
-		maxValueField.setColumns(10);
-		maxValueField.setValue(maxNorm);
-		maxValueField.addPropertyChangeListener("value", new PropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				float v = ((Number)maxValueField.getValue()).floatValue();
-				if(v<minNorm) v=minNorm;
-				int s = slider.getValue();
-				maxNorm = v;
-				normVal = (maxNorm-minNorm)*s/1000.0f-minNorm;
-				if(textField!=null){
-					textField.setText(normVal+"");
-				}
-			}
-		});
-		
-		JLabel lblMax = new JLabel("Max:");
-		JLabel lblMin = new JLabel("Min:");
-		
-		actualMax = new JFormattedTextField(nformat);
-		actualMax.setEditable(false);
-		actualMax.setColumns(10);
-		
-		btnCapture = new JButton("Capture");
+		btnCapture = new JButton("Capture\r\nNow");
 		btnCapture.setEnabled(false);
+		
+		JLabel lblInterpolation = new JLabel("Interpolation");
+		lblInterpolation.setFont(lblInterpolation.getFont().deriveFont(lblInterpolation.getFont().getStyle() | Font.BOLD));
+		
+		JLabel lblCorrection = new JLabel("Correction");
+		lblCorrection.setFont(lblCorrection.getFont().deriveFont(lblCorrection.getFont().getStyle() | Font.BOLD));
+		
+		JPanel panel = new JPanel();
+		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		
+		JPanel panel_1 = new JPanel();
+		panel_1.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		
+		rdbtnLinear = new JRadioButton("Linear");
+		rdbtnCubic = new JRadioButton("Cubic");
+		rdbtnLazano = new JRadioButton("LANCZOS");
+		rdbtnLazano.setSelected(true);
+		
+		rdbtnNone = new JRadioButton("None");
+		rdbtnFlattening = new JRadioButton("Flattening");
+		rdbtnFlatExt = new JRadioButton("Flat + Ext");
+		rdbtnFlatExt.setSelected(true);
+		
+		rdbtnLinear.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					interpolationMethod = 1;
+					rdbtnCubic.setSelected(false);
+					rdbtnLazano.setSelected(false);
+				}	
+			}
+		});
+		rdbtnCubic.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					interpolationMethod = 2;
+					rdbtnLinear.setSelected(false);
+					rdbtnLazano.setSelected(false);
+				}	
+			}
+		});
+		rdbtnLazano.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					interpolationMethod = 3;
+					rdbtnLinear.setSelected(false);
+					rdbtnCubic.setSelected(false);
+				}	
+			}
+		});
+		
+		rdbtnNone.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					correctionMethod = 1;
+					rdbtnFlattening.setSelected(false);
+					rdbtnFlatExt.setSelected(false);
+				}	
+			}
+		});
+		rdbtnFlattening.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					correctionMethod = 2;
+					rdbtnNone.setSelected(false);
+					rdbtnFlatExt.setSelected(false);
+				}	
+			}
+		});
+		rdbtnFlatExt.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(((JRadioButton)e.getSource()).isSelected()){
+					correctionMethod = 3;
+					rdbtnNone.setSelected(false);
+					rdbtnFlattening.setSelected(false);
+				}	
+			}
+		});
+		
+		GroupLayout gl_panel_1 = new GroupLayout(panel_1);
+		gl_panel_1.setHorizontalGroup(
+			gl_panel_1.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel_1.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(gl_panel_1.createParallelGroup(Alignment.LEADING)
+						.addComponent(rdbtnLinear)
+						.addComponent(rdbtnCubic)
+						.addComponent(rdbtnLazano))
+					.addContainerGap(8, Short.MAX_VALUE))
+		);
+		gl_panel_1.setVerticalGroup(
+			gl_panel_1.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel_1.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(rdbtnLinear)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(rdbtnCubic)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(rdbtnLazano)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+		);
+		panel_1.setLayout(gl_panel_1);
 			
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(
 			gl_contentPane.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_contentPane.createSequentialGroup()
-					.addContainerGap(18, 18)
 					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-						.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 739, 2000)
 						.addGroup(gl_contentPane.createSequentialGroup()
+							.addGap(41)
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-								.addComponent(checkBox)
-								.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(slider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+								.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+								.addComponent(lblInterpolation))
+							.addGap(18)
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 								.addGroup(gl_contentPane.createSequentialGroup()
-									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(lblNormalization))
-								.addGroup(gl_contentPane.createSequentialGroup()
-									.addGap(42)
-									.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-										.addGroup(gl_contentPane.createSequentialGroup()
-											.addComponent(lblMin)
-											.addPreferredGap(ComponentPlacement.UNRELATED)
-											.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-										.addGroup(gl_contentPane.createSequentialGroup()
-											.addComponent(lblMax)
-											.addPreferredGap(ComponentPlacement.RELATED)
-											.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-											.addGap(129)
-											.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-												.addComponent(btnCapture)
-												.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))))))
-					.addContainerGap(24, 24))
+									.addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+									.addGap(18)
+									.addComponent(btnCapture, GroupLayout.PREFERRED_SIZE, 102, GroupLayout.PREFERRED_SIZE))
+								.addComponent(lblCorrection)))
+						.addGroup(gl_contentPane.createSequentialGroup()
+							.addGap(18)
+							.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 357, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap(448, Short.MAX_VALUE))
 		);
 		gl_contentPane.setVerticalGroup(
-			gl_contentPane.createParallelGroup(Alignment.LEADING)
+			gl_contentPane.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_contentPane.createSequentialGroup()
 					.addGap(24)
 					.addComponent(captureDisplay, GroupLayout.PREFERRED_SIZE, 238, 1000)
-					.addGap(39)
-					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-						.addComponent(checkBox)
-						.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-							.addComponent(lblNormalization)
-							.addComponent(btnCapture)))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_contentPane.createSequentialGroup()
-							.addComponent(slider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(18)
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.TRAILING, false)
 						.addGroup(gl_contentPane.createSequentialGroup()
 							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblMin)
-								.addComponent(minValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblMax)
-								.addComponent(maxValueField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(actualMax, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))))
-					.addGap(32))
+								.addComponent(lblInterpolation)
+								.addComponent(lblCorrection))
+							.addGap(7)
+							.addGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
+								.addComponent(panel, GroupLayout.PREFERRED_SIZE, 87, GroupLayout.PREFERRED_SIZE)
+								.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+							.addGap(19))
+						.addGroup(gl_contentPane.createSequentialGroup()
+							.addComponent(btnCapture, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+							.addGap(40))))
 		);
+		
+		GroupLayout gl_panel = new GroupLayout(panel);
+		gl_panel.setHorizontalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(rdbtnNone)
+					.addContainerGap(4, Short.MAX_VALUE))
+				.addGroup(Alignment.TRAILING, gl_panel.createSequentialGroup()
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addComponent(rdbtnFlatExt)
+					.addContainerGap())
+				.addGroup(gl_panel.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(rdbtnFlattening)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+		);
+		gl_panel.setVerticalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(rdbtnNone)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(rdbtnFlattening)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(rdbtnFlatExt)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+		);
+		panel.setLayout(gl_panel);
 		contentPane.setLayout(gl_contentPane);
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -204,23 +244,27 @@ public class CaptureSettings extends JFrame {
 		pack();
 	}
 		
-	public float getNormVal(){
-		return normVal;
+	public int getInterpolationMethod(){
+		return interpolationMethod;
+	}
+	
+	public int getCorrectionMethod(){
+		return correctionMethod;
 	}
 		
 	public void setImage(BufferedImage img){
 		this.captureDisplay.setImage(img);
 	}
-	
-	public void setActualMax(int max){
-		this.actualMax.setText(max+"");
-	}
-	
+		
 	public void addCaptureActionListener(ActionListener a){
 		btnCapture.addActionListener(a);
 	}
 	
 	public void enableCapture(boolean e){
 		btnCapture.setEnabled(e);
+	}
+	
+	public static void main(String[] args){
+		new CaptureSettings();
 	}
 }

@@ -9,18 +9,12 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.nio.FloatBuffer;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.swing.text.DateFormatter;
 
 import org.gphoto2.Camera;
 import org.gphoto2.CameraFile;
@@ -32,14 +26,12 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import com.bluetechnix.argos.Argos3D;
 
-import edu.fiu.cate.BookReaderMain;
 import edu.fiu.cate.LuWang;
 import edu.fiu.cate.breader.abbyy.ABBYY;
 import edu.fiu.cate.breader.tools.BReaderTools;
@@ -48,7 +40,6 @@ import freetts.TTS;
 import image.tools.ITools;
 import image.tools.IViewer;
 import img.ImageManipulation;
-import math2.Matrix;
 import math2.Vector;
 
 public class BaseSegmentation{
@@ -64,6 +55,7 @@ public class BaseSegmentation{
 	
 	private ABBYY abbyy = null;
 	private TTS tts = new TTS();
+	CaptureSettings disp = null;
 
 	public BaseSegmentation(){
 		
@@ -81,7 +73,7 @@ public class BaseSegmentation{
 		
 		Argos3D argos = new Argos3D();
 		argos.update();
-		CaptureSettings disp = new CaptureSettings();
+		disp = new CaptureSettings();
 		disp.addWindowListener(new java.awt.event.WindowAdapter()
         {
             @Override
@@ -382,10 +374,26 @@ public class BaseSegmentation{
 		//Crop the distance image and prepare for correction
 		float[][] distRez;
 		Mat destRezM = new Mat();
-		Imgproc.resize(BReaderTools.floatArrayToMat(normImg),
-				destRezM, new Size(0, 0),
-				s,s,
-				Imgproc.INTER_LANCZOS4);//resize image
+		switch(disp.getInterpolationMethod()){
+		case 1:
+			Imgproc.resize(BReaderTools.floatArrayToMat(normImg),
+					destRezM, new Size(0, 0),
+					s,s,
+					Imgproc.INTER_LINEAR);//resize image
+			break;
+		case 2:
+			Imgproc.resize(BReaderTools.floatArrayToMat(normImg),
+					destRezM, new Size(0, 0),
+					s,s,
+					Imgproc.INTER_CUBIC);//resize image
+			break;
+		case 3:
+			Imgproc.resize(BReaderTools.floatArrayToMat(normImg),
+					destRezM, new Size(0, 0),
+					s,s,
+					Imgproc.INTER_LANCZOS4);//resize image
+			break;
+		}
 		distRez = BReaderTools.matToFloatArray(destRezM);
 		int xCentOff = (img[0][0].length - bound.width)/2 - bound.x;
 		int yCentOff = (img[0].length - bound.height)/2 - bound.y;
@@ -415,18 +423,31 @@ public class BaseSegmentation{
 //		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 //		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
 //		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
-		new IViewer("Flat",ImageManipulation.getBufferedImage(foldCorrected));
-		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
+//		new IViewer("Flat",ImageManipulation.getBufferedImage(foldCorrected));
+//		new IViewer("Extension",ImageManipulation.getBufferedImage(extensionCorrected));
 		System.out.println("Overall time: "+(System.currentTimeMillis()-t1)/1000.0);
 		
 		SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd-hh-mm-ss");
 		String time = format.format(new Date(System.currentTimeMillis()));
 		
 		// Save Corrected High Rez.
-		String imgPath = saveDir+"/highResolutionCroppedCorrected-"+time+".tiff";
-		ImageManipulation.writeImage(foldCorrected, imgPath);
+		String imgPath = saveDir+"/correctedImage-"+time+".tiff";
+		switch(disp.getCorrectionMethod()){
+		case 1:{
+			ImageManipulation.writeImage(hiRez, imgPath);
+			new IViewer("Correction Results: None",ImageManipulation.getBufferedImage(hiRez));
+		}break;
+		case 2:{
+			ImageManipulation.writeImage(foldCorrected, imgPath);
+			new IViewer("Correction Results: Flattening",ImageManipulation.getBufferedImage(foldCorrected));
+		}break;
+		case 3:{
+			ImageManipulation.writeImage(extensionCorrected, imgPath);
+			new IViewer("Correction Results: Flattening + Extension",ImageManipulation.getBufferedImage(extensionCorrected));
+		}break;
+		}
+
 		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
-		
 		saveData(time, img, hiRez, distRez, boundLow, bound);
 		
 		System.out.println("Done!!!!");
