@@ -26,6 +26,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorMOG2;
@@ -196,19 +197,32 @@ public class BaseSegmentation{
 		List<MatOfPoint> contours = new LinkedList<>();
 		Mat hierarchy = new Mat();
 		Imgproc.findContours( dst, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0) );
-				
+		
+		Mat color = new Mat();
+		Imgproc.cvtColor(src, color,Imgproc.COLOR_GRAY2BGR);
+		for (int k = 0; k < contours.size(); k++){
+			byte[] vals =  ITools.getHeatMapColor((float)k/(float)contours.size());
+			Imgproc.drawContours(color, contours, k, new Scalar(vals[0],vals[1],vals[2]), 8);
+		}
+		new IViewer("HighRes Contours ",BReaderTools.bufferedImageFromMat(color));
+		
 		Point center = new Point(src.cols()/2, src.rows()/2);
 		//Check hierarchy tree
 		int[] res = polySearch(center, hierarchy, contours, 0);
-		while((res[0]==-1) && (res[2]!=-1)){
+		while(res[0]!=1 && res[2]!=-1){
 			res = polySearch(center, hierarchy, contours, res[2]);
+			if(res[0]==1) break;
 		}
 		
 		MatOfInt tHull = new MatOfInt();
-		Imgproc.convexHull(contours.get(res[1]), tHull);
+		int index = 0;
+		if(res[1]!=-1) {
+			index = res[1];
+		}
+		Imgproc.convexHull(contours.get(index), tHull);
 
 		//get bounding box
-		MatOfPoint cont = contours.get(res[1]);
+		MatOfPoint cont = contours.get(index);
 		Point[] points = new Point[tHull.rows()];
 		for(int i=0; i<tHull.rows(); i++){
 			int pIndex = (int) tHull.get(i, 0)[0];
@@ -262,7 +276,7 @@ public class BaseSegmentation{
 		Mat dst = src.clone();
 
 		Imgproc.blur(src, dst, new Size(5,5), new Point(-1,-1), Core.BORDER_REPLICATE);
-//		threshold(src, src2, 0,255,THRESH_BINARY_INV+THRESH_OTSU);
+//		Imgproc.threshold(dst, dst, 0,255,Imgproc.THRESH_BINARY_INV+Imgproc.THRESH_OTSU);
 		Imgproc.Canny(dst, dst, 50, 200, 3, false);
 //		Canny(src, dst, 20, 60, 3);
 
@@ -271,6 +285,14 @@ public class BaseSegmentation{
 		/// Find contours
 		Imgproc.findContours( dst, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0));
 
+		Mat color = new Mat();
+		Imgproc.cvtColor(src, color,Imgproc.COLOR_GRAY2BGR);
+		for (int k = 0; k < contours.size(); k++){
+			byte[] vals =  ITools.getHeatMapColor((float)k/(float)contours.size());
+			Imgproc.drawContours(color, contours, k, new Scalar(vals[0],vals[1],vals[2]), 1);
+		}
+		new IViewer("LowRes Contours ",BReaderTools.bufferedImageFromMat(color));
+		
 		for (int k = 0; k < contours.size(); k++){
 			MatOfPoint2f tMat = new MatOfPoint2f();
 			Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(k).toArray()), tMat, 5, true);
@@ -305,8 +327,13 @@ public class BaseSegmentation{
 		t1 = t0;
 		byte[][][] img = getHidefImage();
 		System.out.println("HiRez Capture: "+(System.currentTimeMillis()-t0)/1000.0);
+		new IViewer("HiRez",ImageManipulation.getBufferedImage(img));
+		
 		t0 = System.currentTimeMillis();
-		Rect bound = highRes(BReaderTools.byteArrayToMat(ITools.toGrayscale(img)));
+		Rect bound = null;
+		try {
+			bound = highRes(BReaderTools.byteArrayToMat(ITools.toGrayscale(img)));
+		}catch(java.lang.Exception e) {}
 		System.out.println("First bounding box: "+(System.currentTimeMillis()-t0)/1000.0);
 		
 //		Mat imgMat = BReaderTools.byteArrayToMat(img);
@@ -314,14 +341,32 @@ public class BaseSegmentation{
 				
 		byte[][] low = ITools.normalize(normImgCropped);
 		t0 = System.currentTimeMillis();
-		Rect boundLow = lowResDist(BReaderTools.byteArrayToMat(low));
+		Rect boundLow = null;
+		try {
+			boundLow = lowResDist(BReaderTools.byteArrayToMat(low));
+		}catch(java.lang.Exception e) {}
 		System.out.println("second bounding box: "+(System.currentTimeMillis()-t0)/1000.0);
 		
+		if(bound == null || boundLow == null) {
+			tts.doTTS("Document outside field of view. Please realign and press capture again.");
+			return;
+		}
+		
+		if((bound.x+bound.width+100) >= img[0][0].length || (bound.y+bound.height+100) >= img[0].length) {
+			tts.doTTS("Document outside field of view. Please realign and press capture again.");
+			return;
+		}
+		
+		
 		//Show the cropped height map with the bounding box
-//		Mat color = new Mat();
-//		Imgproc.cvtColor(BReaderTools.byteArrayToMat(low), color,Imgproc.COLOR_GRAY2BGR);
-//		Imgproc.rectangle(color, boundLow.tl(), boundLow.br(), new Scalar(255,255,0), 1);
-//		new IViewer(BReaderTools.bufferedImageFromMat(color));
+		Mat color = new Mat();
+		Imgproc.cvtColor(BReaderTools.byteArrayToMat(low), color,Imgproc.COLOR_GRAY2BGR);
+		Imgproc.rectangle(color, boundLow.tl(), boundLow.br(), new Scalar(255,255,0), 1);
+		new IViewer("LowRes Bounding Box",BReaderTools.bufferedImageFromMat(color));
+		
+		Imgproc.cvtColor(BReaderTools.byteArrayToMat(ITools.toGrayscale(img)), color,Imgproc.COLOR_GRAY2BGR);
+		Imgproc.rectangle(color, bound.tl(), bound.br(), new Scalar(255,255,0), 8);
+		new IViewer("HighRes Bounding Box", BReaderTools.bufferedImageFromMat(color));
 		
 //		System.out.println(bound.height+", "+bound.width+": "+(double)bound.width/(double)bound.height);
 //		System.out.println(boundLow.height+", "+boundLow.width+": "+(double)boundLow.width/(double)boundLow.height);
@@ -368,9 +413,7 @@ public class BaseSegmentation{
 //		Imgproc.cvtColor(BReaderTools.byteArrayToMat(ITools.normalize(amplitudes)), gray,Imgproc.COLOR_GRAY2BGR);
 //		Imgproc.rectangle(gray, nBound.tl(), nBound.br(), new Scalar(255,255,0), 1);
 //		new IViewer(BReaderTools.bufferedImageFromMat(gray));
-		
-//		new IViewer(BReaderTools.bufferedImageFromMat(imgMat));
-		
+				
 		//Crop the distance image and prepare for correction
 		float[][] distRez;
 		Mat destRezM = new Mat();
@@ -419,8 +462,8 @@ public class BaseSegmentation{
 		}
 		System.out.println("Extension Correction: "+(System.currentTimeMillis()-t0)/1000.0);
 		
-//		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
-//		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
+		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRez)));
+		new IViewer("HiRez",ImageManipulation.getBufferedImage(hiRez));
 //		new IViewer("Corrected",ImageManipulation.getBufferedImage(foldCorrected));
 //		new IViewer("Heigths",ImageManipulation.getGrayBufferedImage(ITools.normalize(distRezPushed)));
 //		new IViewer("Flat",ImageManipulation.getBufferedImage(foldCorrected));
@@ -447,12 +490,14 @@ public class BaseSegmentation{
 		}break;
 		}
 
-		String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
+		try{
+			String text = abbyy.processImage(imgPath, saveDir+"/text-"+time+".txt");
+			System.out.println("Done!!!!");
+			tts.doTTS(text);
+		}catch (java.lang.NullPointerException e){
+			tts.doTTS("ABBYY License expired.");
+		}
 		saveData(time, img, hiRez, distRez, boundLow, bound);
-		
-		System.out.println("Done!!!!");
-		
-		tts.doTTS(text);
 		
 	}
 	
