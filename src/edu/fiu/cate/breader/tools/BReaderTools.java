@@ -3,6 +3,7 @@ package edu.fiu.cate.breader.tools;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.opencv.core.CvType;
@@ -14,9 +15,9 @@ public class BReaderTools {
 	
 	public static void saveFloatArrayToFile(String file, float[] array){
 		try {
-			java.io.OutputStream out = new java.io.FileOutputStream(file);
+			java.io.DataOutputStream  out = new java.io.DataOutputStream(new FileOutputStream(file));
 			for(float f: array){
-				out.write(Float.floatToIntBits(f));
+				out.writeFloat(f);
 			}
 			out.close();
 		} catch (FileNotFoundException e) {
@@ -28,10 +29,10 @@ public class BReaderTools {
 	
 	public static void saveFloatArrayToFile(String file, float[][] array){
 		try {
-			java.io.OutputStream out = new java.io.FileOutputStream(file);
+			java.io.DataOutputStream  out = new java.io.DataOutputStream(new FileOutputStream(file));
 			for(int y=0; y<array.length; y++){
 				for(int x=0; x<array[0].length; x++){
-					out.write(Float.floatToIntBits(array[y][x]));
+					out.writeFloat(array[y][x]);
 				}
 			}
 			out.close();
